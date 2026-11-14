@@ -223,6 +223,9 @@ func make_actor(asset: String) -> AnimatedSprite2D:
 			region.region = Rect2(frame*32,direction*48,32,48)
 			frames.add_frame(key,region)
 	sprite.sprite_frames = frames
+	if asset=="burglar":
+		sprite.set_meta("rest_frame",1)
+		sprite.set_meta("max_cadence",1.8)
 	sprite.position.y = -20
 	sprite.play("0")
 	return sprite

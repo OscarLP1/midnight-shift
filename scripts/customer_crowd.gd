@@ -86,6 +86,8 @@ func spawn() -> void:
 		thieves_spawned += 1
 		var outfit: AnimatedSprite2D = game.make_actor("burglar")
 		sprite.sprite_frames = outfit.sprite_frames
+		sprite.set_meta("rest_frame",1)
+		sprite.set_meta("max_cadence",1.8)
 		outfit.free()
 		sprite.material = null
 	people.append(p)
