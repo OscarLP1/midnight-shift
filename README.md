@@ -1,6 +1,8 @@
 # Turno de Medianoche · 0.4.0
 
-Prototipo Godot 4.7.2, Compatibility, 640×360. Fases 1 y 2 en desarrollo; no se ha generado APK.
+**Turno de Medianoche** (repositorio `midnight-shift`) es un juego de terror y gestión en pixel art: atiendes una tienda de conveniencia durante un turno nocturno de 12 minutos que representa las 22:00–06:00, mientras aparecen criaturas y ocurren eventos ambientales. Está pensado para jugadores de PC que disfrutan experiencias cortas de atmósfera, exploración y gestión ligera.
+
+Prototipo Godot 4.7.2, Compatibility, 640×360. Fases 1 y 2 en desarrollo; no se ha generado APK. Proyecto personal en desarrollo activo; el trabajo pendiente está en [`ROADMAP.md`](ROADMAP.md).
 
 ## Jugar
 
@@ -26,6 +28,10 @@ Almacenamiento ($40): capacidad 24→40. Terminal ($60): precio $4→$5. Disuasi
 
 Pruebas en `tools/test_flow.gd`, `test_events.gd`, `test_city.gd`, `test_crowd_interiors.gd`, `test_crowd_soak.gd`, `test_commerce_ui.gd`, `test_spatial_events_ui.gd` y `test_night_atelier.gd`. La última cubre colisión física de paredes, lado de cobro, retirada gradual, huida, horario y duración de apariciones, mezcla/silencio musical, entrada al atelier, personalización persistente y salida. Cada prueba comercial usa un guardado separado. `capture_night_atelier.gd` produce capturas reales en `docs/new-*.png`.
 
-Arte original generado con image_gen y preparado con Pillow. Tienda y ciudad prerenderizadas, muebles ordenados por profundidad; siete apariencias de clientes con cuatro direcciones. Puede haber solapamiento breve entre NPC. Pendientes: tiles modulares, separación local entre NPC, inventario por producto, vigilancia interactiva y pruebas Android.
+Arte original generado con image_gen y preparado con Pillow. Tienda y ciudad prerenderizadas, muebles ordenados por profundidad; siete apariencias de clientes con cuatro direcciones. Puede haber solapamiento breve entre NPC. Pendientes (detalle en [`ROADMAP.md`](ROADMAP.md)): tiles modulares, separación local entre NPC, inventario por producto, vigilancia interactiva y pruebas Android.
 
 Fuentes: Atkinson Hyperlegible y Pixelify Sans, de Google Fonts; licencias OFL incluidas en `assets/fonts`.
+
+## Licencia
+
+Publicado bajo licencia MIT; consulta [`LICENSE`](LICENSE). Las fuentes se distribuyen bajo SIL Open Font License (OFL), con sus textos en `assets/fonts`.
