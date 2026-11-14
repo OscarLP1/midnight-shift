@@ -17,7 +17,11 @@ var muted := false
 var music_volume := 0.8
 var effects_volume := 0.7
 var voice: AudioStreamPlayer
-var monsters: Array[Texture2D] = []
+var creatures: Array[AnimatedSprite2D] = []
+var vocal_in := 0.0
+var vocal_count := 0
+var last_vocal := ""
+var vocal_hold := 0.0
 var music: Array[AudioStreamPlayer] = []
 var monster_path := PackedVector2Array()
 var monster_repath := 0.0
@@ -33,7 +37,14 @@ func setup(owner_game: Node2D) -> void:
 		effects_volume = clampf(float(settings.get_value("audio","effects",0.7)),0,2)
 		muted = bool(settings.get_value("audio","muted",false))
 	z_index = 5
-	for i in range(3): monsters.append(load("res://assets/monster-%d.png" % i))
+	for i in range(3):
+		var creature: AnimatedSprite2D = game.make_actor("monster-walk-%d" % i,Vector2i(40,64))
+		creature.offset.y = -28
+		creature.position = Vector2.ZERO
+		creature.visible = false
+		creature.set_meta("max_cadence",1.25)
+		game.add_child(creature)
+		creatures.append(creature)
 	voice = AudioStreamPlayer.new()
 	voice.stream = load("res://assets/audio/threshold.wav")
 	voice.volume_db = -13
@@ -50,14 +61,21 @@ func setup(owner_game: Node2D) -> void:
 		if DisplayServer.get_name()!="headless": layer.play()
 
 func _process(delta: float) -> void:
-	if is_instance_valid(voice): voice.stream_paused = not game.active or muted
-	voice.volume_db = -13.0+linear_to_db(maxf(effects_volume,0.0001))
+	if is_instance_valid(voice): voice.stream_paused = not game.active or muted or game.location!="store"
+	for i in range(creatures.size()):
+		creatures[i].visible = apparition>0 and monster_index==i and game.location=="store"
+		if not game.active: creatures[i].pause()
+	if not creatures.is_empty() and apparition>0:
+		var creature: AnimatedSprite2D = creatures[monster_index]
+		creature.position = monster_position
+		creature.modulate = Color(0.90,0.93,1,minf(clampf(apparition_age/1.2,0,1),clampf(apparition/2,0,1)))
+	voice.volume_db = -9.0+linear_to_db(maxf(effects_volume,0.0001))
 	var danger: bool = apparition>0 or game.security.danger()
 	var tension: float = 1.0 if danger else (0.35 if game.elapsed>=horror_start()-60 and game.location=="store" else 0.0)
 	var levels := [-60.0 if danger else -7.0,lerpf(-60,-10,tension),-10.0 if apparition>0 else -60.0]
 	for i in range(music.size()):
 		music[i].stream_paused = not game.active or muted
-		music[i].volume_db = move_toward(music[i].volume_db,levels[i]+linear_to_db(maxf(music_volume,0.0001)),delta*7.0)
+		music[i].volume_db = move_toward(music[i].volume_db,levels[i]-(5.0 if voice.playing else 0.0)+linear_to_db(maxf(music_volume,0.0001)),delta*7.0)
 
 func save_audio_settings() -> void:
 	var settings := ConfigFile.new()
@@ -86,6 +104,10 @@ func reset_shift() -> void:
 	haunt_door = -1
 	event_count = 0
 	voice.stop()
+	vocal_in = 0
+	vocal_hold = 0
+	vocal_count = 0
+	for creature in creatures: creature.visible = false
 
 func tick(delta: float) -> void:
 	phase += delta
@@ -111,10 +133,21 @@ func tick(delta: float) -> void:
 		event_count += 1
 		next_apparition = game.elapsed+game.seconds_per_game_hour()*0.5
 		game.message.text = "Hay alguien en el pasillo. No parece un cliente." if event_count%2==1 else "Las luces cambian… algo está aquí."
-		voice.stream = load("res://assets/audio/"+["ghost-voice","ghost-scream","threshold"][monster_index]+".wav")
-		if not muted and DisplayServer.get_name()!="headless": voice.play()
+		vocal_count = 0
+		vocal_in = 0
+		vocal_hold = 0
+
 	if apparition>0:
 		apparition_age += delta
+		var before: Vector2 = monster_position
+		vocal_in -= delta
+		vocal_hold = maxf(0,vocal_hold-delta)
+		if vocal_in<=0:
+			var cue: String = ["stalker-growl","antler-scream","drowned-sobs"][monster_index]
+			if monster_index==0 and monster_position.distance_to(game.player.position)<80: cue = "stalker-scream"
+			play_vocal(cue)
+			vocal_in = [5.5,6.5,5.0][monster_index]
+			vocal_hold = 0.7 if monster_index!=2 else 1.0
 		monster_repath -= delta
 		if monster_index==1:
 			haunt_door = int(apparition_age/3)%5
@@ -125,13 +158,18 @@ func tick(delta: float) -> void:
 				monster_path = game.crowd.nav.get_point_path(Vector2i((monster_position/8).round()),Vector2i((target/8).round()))
 				if not monster_path.is_empty(): monster_path.remove_at(0)
 				monster_repath = 0.7
-			if not monster_path.is_empty():
+			if not monster_path.is_empty() and vocal_hold<=0:
 				monster_position = monster_position.move_toward(monster_path[0],(62 if monster_index==0 else 38)*delta)
 				if monster_position.distance_to(monster_path[0])<0.5: monster_path.remove_at(0)
 			if monster_index==0 and monster_position.distance_to(game.player.position)<19 and not game.security.hiding:
 				game.message.text = "¡Está detrás de ti! Corre o escóndete."
+		game.Motion.animate(creatures[monster_index],monster_position-before,62 if monster_index==0 else 38)
+		creatures[monster_index].position = monster_position
 	apparition = maxf(0,apparition-delta)
-	if apparition<=0: haunt_door = -1
+	if apparition<=0:
+		haunt_door = -1
+		voice.stop()
+		for creature in creatures: creature.visible = false
 	queue_redraw()
 
 func interact() -> bool:
@@ -199,9 +237,8 @@ func _draw() -> void:
 	if apparition>0:
 		var opacity := minf(clampf((APPEARANCE_SECONDS-apparition)/1.2,0,1),clampf(apparition/2.0,0,1))
 		draw_rect(Rect2(32,92,576,188),Color(0.025,0.04,0.09,(0.65 if sin(phase*19)>0.7 else 0.18)*opacity))
-		var drift := Vector2(sin(phase*0.7)*2,sin(phase*1.1))
 		draw_ellipse_shadow(monster_position,opacity)
-		draw_texture_rect(monsters[monster_index],Rect2(monster_position+drift-Vector2(20,56),Vector2(40,64)),false,Color(0.90,0.93,1.0,opacity))
+
 		if haunt_door>=0:
 			for i in range(4):
 				var drop := fposmod(phase*14+i*13,18)
@@ -211,3 +248,9 @@ func draw_ellipse_shadow(pos: Vector2, opacity: float) -> void:
 	draw_set_transform(pos,0,Vector2(1,0.22))
 	draw_circle(Vector2.ZERO,20,Color(0.015,0.02,0.035,0.45*opacity))
 	draw_set_transform(Vector2.ZERO)
+
+func play_vocal(cue: String) -> void:
+	last_vocal = cue
+	vocal_count += 1
+	voice.stream = load("res://assets/audio/"+cue+".wav")
+	if not muted and DisplayServer.get_name()!="headless": voice.play()

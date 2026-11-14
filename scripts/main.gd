@@ -209,7 +209,7 @@ func _ready() -> void:
 	button("Mapa · M",Vector2(510,48),open_map)
 	show_panel("TURNO DE MEDIANOCHE\nNoche tranquila, trabajo pendiente.\nWASD / flechas · E para interactuar\nTáctil: arrastra a la izquierda", "Nueva partida", start.bind(false), true)
 
-func make_actor(asset: String) -> AnimatedSprite2D:
+func make_actor(asset: String, cell_size := Vector2i(32,48)) -> AnimatedSprite2D:
 	var sprite := AnimatedSprite2D.new()
 	var frames := SpriteFrames.new()
 	var texture: Texture2D = load("res://assets/" + asset + ".png")
@@ -220,10 +220,10 @@ func make_actor(asset: String) -> AnimatedSprite2D:
 		for frame in range(4):
 			var region := AtlasTexture.new()
 			region.atlas = texture
-			region.region = Rect2(frame*32,direction*48,32,48)
+			region.region = Rect2(frame*cell_size.x,direction*cell_size.y,cell_size.x,cell_size.y)
 			frames.add_frame(key,region)
 	sprite.sprite_frames = frames
-	if asset=="burglar":
+	if asset in ["burglar","police-officer","customer-woman","customer-senior","customer-courier","stray-dog"] or asset.begins_with("monster-walk-"):
 		sprite.set_meta("rest_frame",1)
 		sprite.set_meta("max_cadence",1.8)
 	sprite.position.y = -20
@@ -724,3 +724,11 @@ func cold_stock() -> int:
 	return zone_stock.slice(3).reduce(func(a,b): return a+b,0)
 func shelf_stock() -> int:
 	return zone_stock.slice(0,3).reduce(func(a,b): return a+b,0)
+
+func _process(_delta: float) -> void:
+	if active: return
+	if is_instance_valid(actor): actor.pause()
+	for person in crowd.people: person.sprite.pause()
+	if is_instance_valid(security):
+		if is_instance_valid(security.officer): security.officer.pause()
+		if is_instance_valid(security.dog_sprite): security.dog_sprite.pause()

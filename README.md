@@ -37,3 +37,5 @@ Fuentes: Atkinson Hyperlegible y Pixelify Sans, de Google Fonts; licencias OFL i
 Publicado bajo licencia MIT; consulta [`LICENSE`](LICENSE). Las fuentes se distribuyen bajo SIL Open Font License (OFL), con sus textos en `assets/fonts`.
 
 Actualización de comportamiento: HUD separa Neveras/Estantes. E sujeta perros y recupera mercancía; camina a la entrada para sacarlos. H junto al mostrador anima el escondite; Shift corre. Los civiles buscan refugio si hay peligro y la puerta está cerrada. La patrulla revisa sin detenidos si no hay sospechosos y escolta a los capturados delante del agente. Fantasmas pueden abrir neveras: revisa sus indicadores de estado.
+
+Animaciones: agente, tres monstruos, variantes de clientes y perro tienen ciclos completos en cuatro direcciones. El perseguidor gruñe y grita cerca; la criatura con astas lanza alaridos y el fantasma azul solloza. Son efectos sintetizados originales. Pausa detiene marcha y vocalización. Preparación reproducible: tools/prepare_walk_cycles.py y tools/compose_creature_voices.py.

@@ -105,7 +105,9 @@ func tick(delta: float) -> void:
 		dog_in = game.crowd.rng.randf_range(45,75)
 	if is_instance_valid(dog):
 		if dog_caught:
+			var previous: Vector2 = dog.position
 			dog.position = game.player.position+Vector2(17,0)
+			game.Motion.animate(dog_sprite,dog.position-previous,game.player.velocity.length())
 			if game.player.position.distance_to(Vector2(320,272))<35:
 				dog.free()
 				game.message.text = "Sacaste al perro por la entrada y volviste a cerrarla." if closed else "Sacaste al perro a la calle."
@@ -119,6 +121,7 @@ func tick(delta: float) -> void:
 			game.Motion.animate(dog_sprite,dog.position-before,80)
 			if dog.position.distance_to(dog_path[0])<0.5: dog_path.remove_at(0)
 		elif dog_state=="roaming":
+			game.Motion.animate(dog_sprite,Vector2.ZERO)
 			dog_wait += delta
 			if dog_wait<0.35: return
 			dog_wait = 0
@@ -183,7 +186,9 @@ func police_route(target: Vector2) -> void:
 	if not officer_path.is_empty(): officer_path.remove_at(0)
 
 func move_officer(delta: float) -> void:
-	if officer_path.is_empty(): return
+	if officer_path.is_empty():
+		game.Motion.animate(officer,Vector2.ZERO)
+		return
 	var before: Vector2 = officer.position
 	officer.position = officer.position.move_toward(officer_path[0],120*delta)
 	game.Motion.animate(officer,officer.position-before,120)
