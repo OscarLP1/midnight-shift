@@ -27,6 +27,9 @@ var stolen_zone := 0
 var dog_wait := 0.0
 var patrol_x := -90.0
 var patrol_texture: Texture2D
+const DOG_TROT_SPEED := 75.0
+const DOG_ESCAPE_SPEED := 88.0
+const PATROL_WHEEL_CENTERS = [Vector2(20,30),Vector2(69,30)]
 func _process(delta: float) -> void:
 	if game==null: return
 	visible = game.location=="store"
@@ -117,8 +120,9 @@ func tick(delta: float) -> void:
 				queue_redraw()
 				return
 			var before: Vector2 = dog.position
-			dog.position = dog.position.move_toward(dog_path[0],(110 if carrying else 95)*delta)
-			game.Motion.animate(dog_sprite,dog.position-before,80)
+			var speed := DOG_ESCAPE_SPEED if carrying else DOG_TROT_SPEED
+			dog.position = dog.position.move_toward(dog_path[0],speed*delta)
+			game.Motion.animate(dog_sprite,dog.position-before,speed)
 			if dog.position.distance_to(dog_path[0])<0.5: dog_path.remove_at(0)
 		elif dog_state=="roaming":
 			game.Motion.animate(dog_sprite,Vector2.ZERO)
@@ -172,11 +176,13 @@ func _draw() -> void:
 		draw_circle(pos+Vector2(2,-3),3,Color("775136"))
 	if patrol_time>0 and patrol_texture!=null:
 		draw_texture_rect(patrol_texture,Rect2(patrol_x,308,88,38),false)
-		for x in [patrol_x+17,patrol_x+69]:
-			draw_arc(Vector2(x,338),5,0,TAU,12,Color("17202b"),2)
+		for offset in PATROL_WHEEL_CENTERS:
+			var center: Vector2 = Vector2(patrol_x,308)+offset
+			draw_circle(center,4.5,Color("26303b"))
+			draw_arc(center,4.5,0,TAU,16,Color("aab9c2"),1)
 			for i in range(3):
 				var angle := wheel_phase+i*TAU/3
-				draw_line(Vector2(x,338),Vector2(x,338)+Vector2.from_angle(angle)*4,Color("aab9c2"),1)
+				draw_line(center,center+Vector2.from_angle(angle)*3.5,Color("aab9c2"),1)
 	if is_instance_valid(dog) and carrying:
 		draw_rect(Rect2(dog.position+Vector2(10,-7),Vector2(6,5)),Color("e7b85e"))
 
@@ -218,8 +224,9 @@ func tick_police(delta: float) -> void:
 			patrol_texture = load("res://assets/patrol-car.png")
 			return
 	if police_state=="arriving":
-		wheel_phase += delta*18
+		var previous_x := patrol_x
 		patrol_x = move_toward(patrol_x,350,110*delta)
+		wheel_phase += (patrol_x-previous_x)/5.0
 		if patrol_x==350:
 			police_state = "parked"
 			repath = 0.8
@@ -302,8 +309,9 @@ func tick_police(delta: float) -> void:
 		police_state = "departing"
 		game.message.text = "La patrulla se lleva a %d detenido(s)." % count if count>0 else "La patrulla termina la revisión sin detenidos."
 	elif police_state=="departing":
-		wheel_phase += delta*18
+		var previous_x := patrol_x
 		patrol_x = move_toward(patrol_x,740,110*delta)
+		wheel_phase += (patrol_x-previous_x)/5.0
 		if patrol_x==740:
 			police_state = "idle"
 			patrol_time = 0
