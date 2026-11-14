@@ -9,6 +9,8 @@ var rng := RandomNumberGenerator.new()
 var nav := AStarGrid2D.new()
 var spawn_in := 1.0
 var serial := 0
+var thief_times: Array[float] = []
+var thieves_spawned := 0
 var withdrawal_in := 0.0
 var last_look := -1
 var look_bag: Array[int] = []
@@ -39,6 +41,9 @@ func reset() -> void:
 	withdrawal_in = 0
 	last_look = -1
 	look_bag.clear()
+	thieves_spawned = 0
+	thief_times.clear()
+	for i in range(rng.randi_range(2,4)): thief_times.append(45.0+i*110.0+rng.randf_range(0,25))
 
 func spawn() -> void:
 	if look_bag.is_empty():
@@ -62,7 +67,10 @@ func spawn() -> void:
 	var bubble := Label.new()
 	bubble.position = Vector2(-25,-57)
 	bubble.add_theme_font_size_override("font_size",10)
-	bubble.add_theme_color_override("font_color",Color("ffdd92"))
+	bubble.add_theme_color_override("font_color",Color.WHITE)
+	bubble.add_theme_color_override("font_outline_color",Color.BLACK)
+	bubble.add_theme_constant_override("outline_size",4)
+	bubble.z_index = 12
 	body.add_child(bubble)
 	game.add_child(body)
 	var targets: Array[Vector2] = []
@@ -72,8 +80,10 @@ func spawn() -> void:
 		targets.append(SPOTS[indexes[pick]])
 		indexes.remove_at(pick)
 	serial += 1
-	var p := {"id":serial,"node":body,"sprite":sprite,"bubble":bubble,"look":look,"state":"shopping","targets":targets,"path":PackedVector2Array(),"wait":0.0,"patience":rng.randf_range(55,110),"speed":rng.randf_range(36,49),"basket":0,"items":[],"thief":rng.randf()<game.progression.theft_chance(),"evidence":false,"lost":false}
+	var p := {"id":serial,"node":body,"sprite":sprite,"bubble":bubble,"look":look,"state":"shopping","targets":targets,"path":PackedVector2Array(),"wait":0.0,"patience":rng.randf_range(55,110),"speed":rng.randf_range(36,49),"basket":0,"items":[],"thief":not thief_times.is_empty() and game.elapsed>=thief_times[0],"evidence":false,"lost":false}
 	if p.thief:
+		thief_times.pop_front()
+		thieves_spawned += 1
 		var outfit: AnimatedSprite2D = game.make_actor("burglar")
 		sprite.sprite_frames = outfit.sprite_frames
 		outfit.free()
@@ -113,11 +123,36 @@ func tick(delta: float) -> void:
 		spawn_in = rng.randf_range(7,13)
 	for p in people.duplicate():
 		if p.state=="arrested": continue
+		if not p.thief and game.security.closed and (game.security.danger() or game.security.police_state!="idle") and p.state!="sheltering":
+			queue.erase(p)
+			p.state = "sheltering"
+			plan(p,Vector2(184+(p.id%3)*24,264))
+		if p.state=="sheltering":
+			p.bubble.text = "A salvo · esperando"
+			if not game.security.closed and not game.security.danger():
+				p.sprite.scale = Vector2.ONE
+				leave(p)
+			elif p.path.is_empty():
+				p.sprite.scale.y = 0.65
+				continue
+		if p.state=="fleeing" and not game.security.closed and game.security.police_state=="idle": leave(p)
+		if p.state=="queue" and not p.thief:
+			var stocked := false
+			for product in p.items:
+				if game.zone_stock[game.product_zone(product)]>0: stocked = true
+			if not stocked: leave(p)
 		if p.state=="fleeing" and p.path.is_empty(): plan(p,SPOTS[rng.randi_range(0,7)])
 		if not p.path.is_empty():
 			var target: Vector2 = p.path[0]
 			if game.security.closed and ((p.node.position.y<=280 and target.y>280) or (p.node.position.y>280 and target.y<=280)):
 				p.bubble.text = "Puerta cerrada"
+				if p.thief:
+					p.state = "fleeing"
+					p.speed = 95
+					plan(p,SPOTS[rng.randi_range(0,7)])
+				else:
+					p.state = "sheltering"
+					plan(p,Vector2(184+(p.id%3)*24,264))
 				continue
 			var before: Vector2 = p.node.position
 			p.node.position = p.node.position.move_toward(target,p.speed*delta)
@@ -137,6 +172,11 @@ func tick(delta: float) -> void:
 				visits_log.append(visited)
 				var product_names := ["Papas Crujín", "Fideos Nube", "Jabón Claro", "Agua Bruma", "Jugo Aurora", "Leche Alba", "Yogur Nieve", "Queso Fresco"]
 				var spot_index := SPOTS.find(visited)
+				var product_zone: int = spot_index
+				if product_zone<0 or product_zone>=game.zone_stock.size() or game.zone_stock[product_zone]<=0:
+					p.bubble.text = "Agotado · se va"
+					leave(p)
+					continue
 				if spot_index<3:
 					p.items.append(game.exploration.PRODUCTS[spot_index][rng.randi_range(0,2)])
 				else: p.items.append(product_names[spot_index])
@@ -144,6 +184,12 @@ func tick(delta: float) -> void:
 				p.wait = 0
 				if p.thief:
 					p.evidence = true
+					var amount: int = mini(game.zone_stock[spot_index],rng.randi_range(1,5))
+					game.zone_stock[spot_index] -= amount
+					p.stolen_zone = spot_index
+					p.stolen_count = amount
+					p.lost = true
+					game.events.losses += amount*game.progression.sale_price()
 					p.state = "concealing"
 					p.bubble.text = "Oculta un artículo"
 				elif p.targets.is_empty():
@@ -171,13 +217,18 @@ func tick(delta: float) -> void:
 			p.node.queue_free()
 
 func first() -> Dictionary:
-	if queue.is_empty() or queue[0].thief or not queue[0].path.is_empty(): return {}
-	return queue[0]
+	for person in queue:
+		if not person.thief and person.state=="queue" and person.path.is_empty(): return person
+	return {}
 
 func intervene() -> bool:
 	for p in people:
 		if p.evidence and p.node.position.distance_to(game.player.position)<48:
 			p.evidence = false
+			if p.get("stolen_count",0)>0:
+				game.zone_stock[p.stolen_zone] += p.stolen_count
+				game.events.losses -= p.stolen_count*game.progression.sale_price()
+				p.stolen_count = 0
 			p.items.clear()
 			p.basket = 0
 			leave(p)
@@ -187,7 +238,7 @@ func intervene() -> bool:
 
 func frighten() -> void:
 	for p in people:
-		if p.state=="arrested": continue
+		if p.state in ["arrested","sheltering"]: continue
 		leave(p)
 		p.speed = 105.0
 		p.bubble.text = "¡Vámonos!"

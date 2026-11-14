@@ -7,6 +7,7 @@ var amounts := [0.0,0.0,0.0,0.0,0.0]
 
 func _process(delta: float) -> void:
 	if game == null: return
+	z_index = 1
 	visible = game.location == "store"
 	if not visible: return
 	if game.events.door >= 0: door_index = game.events.door

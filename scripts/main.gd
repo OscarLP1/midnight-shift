@@ -362,7 +362,7 @@ func _physics_process(delta: float) -> void:
 		hud.text = "%s · $%d" % [{"cafe":"CAFÉ DEL FARO","hardware":"FERRETERÍA DEL FARO","atelier":"ATELIER · HILO Y SOMBRA"}[location],money]
 		return
 	var hour := shift_hour()
-	hud.text = "NOCHE %d   %02d:00   $%d   Stock %d/%d" % [night,hour,money,stock,progression.capacity()]
+	hud.text = "NOCHE %d   %02d:00   $%d   Neveras %d · Estantes %d" % [night,hour,money,cold_stock(),shelf_stock()]
 	if hour_flash>0: hud.add_theme_color_override("font_color",Color("ffdf9e"))
 	else: hud.remove_theme_color_override("font_color")
 	if elapsed >= SHIFT_SECONDS: finish()
@@ -395,9 +395,16 @@ func interact() -> void:
 func complete_sale() -> void:
 	if not transaction_open or checkout_person.is_empty() or payment_method not in ["card","cash"]: return
 	transaction_open = false
-	soundscape.play("register")
 	var products := checkout_items()
 	var count: int = products.size()
+	if count<=0:
+		crowd.leave(checkout_person)
+		checkout_person = {}
+		panel.queue_free()
+		active = true
+		message.text = "Sin existencias: el cliente se marcha sin pagar."
+		return
+	soundscape.play("register")
 	for product in products: zone_stock[product_zone(product)] -= 1
 	var total := count*progression.sale_price()
 	money += total
@@ -709,3 +716,8 @@ Entrada: %s · Patrulla: %s" % ["cerrada" if security.closed else "abierta",secu
 	add_panel_button("Salir del escondite · H" if security.hiding else "Esconderse · H",func():
 		close_city_panel()
 		security.hide_player())
+
+func cold_stock() -> int:
+	return zone_stock.slice(3).reduce(func(a,b): return a+b,0)
+func shelf_stock() -> int:
+	return zone_stock.slice(0,3).reduce(func(a,b): return a+b,0)

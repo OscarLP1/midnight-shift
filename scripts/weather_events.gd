@@ -19,6 +19,9 @@ var effects_volume := 0.7
 var voice: AudioStreamPlayer
 var monsters: Array[Texture2D] = []
 var music: Array[AudioStreamPlayer] = []
+var monster_path := PackedVector2Array()
+var monster_repath := 0.0
+var apparition_age := 0.0
 var monster_position := Vector2(272,224)
 const APPEARANCE_SECONDS := 16.0
 
@@ -98,6 +101,9 @@ func tick(delta: float) -> void:
 		else: open_time[i] = 0.0
 	if game.elapsed>=next_apparition and game.elapsed<game.SHIFT_SECONDS :
 		apparition = APPEARANCE_SECONDS
+		apparition_age = 0
+		monster_path.clear()
+		monster_repath = 0
 		monster_position = Vector2(580,326) if game.security.closed else [Vector2(272,224),Vector2(432,216),Vector2(320,268)][event_count%3]
 		game.crowd.frighten()
 		monster_index = (game.night-1+event_count)%3
@@ -105,7 +111,25 @@ func tick(delta: float) -> void:
 		event_count += 1
 		next_apparition = game.elapsed+game.seconds_per_game_hour()*0.5
 		game.message.text = "Hay alguien en el pasillo. No parece un cliente." if event_count%2==1 else "Las luces cambian… algo está aquí."
+		voice.stream = load("res://assets/audio/"+["ghost-voice","ghost-scream","threshold"][monster_index]+".wav")
 		if not muted and DisplayServer.get_name()!="headless": voice.play()
+	if apparition>0:
+		apparition_age += delta
+		monster_repath -= delta
+		if monster_index==1:
+			haunt_door = int(apparition_age/3)%5
+			open_doors[haunt_door] = true
+		if monster_position.y<280:
+			if monster_repath<=0:
+				var target: Vector2 = game.player.position if monster_index==0 and not game.security.hiding else game.crowd.SPOTS[(event_count+int(apparition_age/3))%8]
+				monster_path = game.crowd.nav.get_point_path(Vector2i((monster_position/8).round()),Vector2i((target/8).round()))
+				if not monster_path.is_empty(): monster_path.remove_at(0)
+				monster_repath = 0.7
+			if not monster_path.is_empty():
+				monster_position = monster_position.move_toward(monster_path[0],(62 if monster_index==0 else 38)*delta)
+				if monster_position.distance_to(monster_path[0])<0.5: monster_path.remove_at(0)
+			if monster_index==0 and monster_position.distance_to(game.player.position)<19 and not game.security.hiding:
+				game.message.text = "¡Está detrás de ti! Corre o escóndete."
 	apparition = maxf(0,apparition-delta)
 	if apparition<=0: haunt_door = -1
 	queue_redraw()
@@ -174,7 +198,7 @@ func _draw() -> void:
 		draw_line(Vector2(366,306),Vector2(616,306),Color("d8e5ed"),2)
 	if apparition>0:
 		var opacity := minf(clampf((APPEARANCE_SECONDS-apparition)/1.2,0,1),clampf(apparition/2.0,0,1))
-		draw_rect(Rect2(32,92,576,188),Color(0.025,0.04,0.09,0.18*opacity))
+		draw_rect(Rect2(32,92,576,188),Color(0.025,0.04,0.09,(0.65 if sin(phase*19)>0.7 else 0.18)*opacity))
 		var drift := Vector2(sin(phase*0.7)*2,sin(phase*1.1))
 		draw_ellipse_shadow(monster_position,opacity)
 		draw_texture_rect(monsters[monster_index],Rect2(monster_position+drift-Vector2(20,56),Vector2(40,64)),false,Color(0.90,0.93,1.0,opacity))
