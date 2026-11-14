@@ -1,0 +1,119 @@
+WorkerThreadPool: 12 threads, 3 max low-priority.
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+TextServer: Added interface "Dummy"
+TextServer: Added interface "ICU / HarfBuzz / Graphite (Built-in)"
+Using "default" pen tablet driver...
+
+TextServer: Primary interface set to: "ICU / HarfBuzz / Graphite (Built-in)".
+CORE API HASH: 2004498165
+EDITOR API HASH: 1696660745
+Loading resource: res://tools/test_night_atelier.gd remapped: res://tools/test_night_atelier.gd
+Completed load for: 'res://tools/test_night_atelier.gd' remapped 'res://tools/test_night_atelier.gd' at thread -1
+SceneTreeFTI: traversal method DEFAULT
+Loaded system CA certificates
+Loading resource: res://scenes/main.tscn remapped: res://scenes/main.tscn
+Loading resource: res://scripts/main.gd remapped: res://scripts/main.gd
+Loading resource: res://assets/fonts/Atkinson-Regular.ttf remapped: res://assets/fonts/Atkinson-Regular.ttf
+Loading resource: res://.godot/imported/Atkinson-Regular.ttf-543ac9edb3650ddd83c67a10ff7aac06.fontdata remapped: res://.godot/imported/Atkinson-Regular.ttf-543ac9edb3650ddd83c67a10ff7aac06.fontdata
+Completed load for: 'res://assets/fonts/Atkinson-Regular.ttf' remapped 'res://assets/fonts/Atkinson-Regular.ttf' at thread -1
+Loading resource: res://assets/fonts/Atkinson-Bold.ttf remapped: res://assets/fonts/Atkinson-Bold.ttf
+Loading resource: res://.godot/imported/Atkinson-Bold.ttf-9d2d28fcf5b74ce0d7bdb260cff4203d.fontdata remapped: res://.godot/imported/Atkinson-Bold.ttf-9d2d28fcf5b74ce0d7bdb260cff4203d.fontdata
+Completed load for: 'res://assets/fonts/Atkinson-Bold.ttf' remapped 'res://assets/fonts/Atkinson-Bold.ttf' at thread -1
+Loading resource: res://assets/fonts/PixelifySans.ttf remapped: res://assets/fonts/PixelifySans.ttf
+Loading resource: res://.godot/imported/PixelifySans.ttf-4613dc276f227b5d31d032a4586e3281.fontdata remapped: res://.godot/imported/PixelifySans.ttf-4613dc276f227b5d31d032a4586e3281.fontdata
+Completed load for: 'res://assets/fonts/PixelifySans.ttf' remapped 'res://assets/fonts/PixelifySans.ttf' at thread -1
+Loading resource: res://scripts/appearance.gdshader remapped: res://scripts/appearance.gdshader
+Completed load for: 'res://scripts/appearance.gdshader' remapped 'res://scripts/appearance.gdshader' at thread -1
+Loading resource: res://scripts/customer_palette.gdshader remapped: res://scripts/customer_palette.gdshader
+Completed load for: 'res://scripts/customer_palette.gdshader' remapped 'res://scripts/customer_palette.gdshader' at thread -1
+Completed load for: 'res://scripts/main.gd' remapped 'res://scripts/main.gd' at thread -1
+Completed load for: 'res://scenes/main.tscn' remapped 'res://scenes/main.tscn' at thread -1
+Loading resource: res://assets/store-modern.png remapped: res://assets/store-modern.png
+Loading resource: res://.godot/imported/store-modern.png-07f8e87993e350f60119f7b4899c1974.ctex remapped: res://.godot/imported/store-modern.png-07f8e87993e350f60119f7b4899c1974.ctex
+Completed load for: 'res://assets/store-modern.png' remapped 'res://assets/store-modern.png' at thread -1
+Loading resource: res://assets/store-prop-0.png remapped: res://assets/store-prop-0.png
+Loading resource: res://.godot/imported/store-prop-0.png-81bec3973b1c8abb66527621e3ce4875.ctex remapped: res://.godot/imported/store-prop-0.png-81bec3973b1c8abb66527621e3ce4875.ctex
+Completed load for: 'res://assets/store-prop-0.png' remapped 'res://assets/store-prop-0.png' at thread -1
+Loading resource: res://assets/store-prop-1.png remapped: res://assets/store-prop-1.png
+Loading resource: res://.godot/imported/store-prop-1.png-c851b542f7f366c87fa9263d6f7e7ab4.ctex remapped: res://.godot/imported/store-prop-1.png-c851b542f7f366c87fa9263d6f7e7ab4.ctex
+Completed load for: 'res://assets/store-prop-1.png' remapped 'res://assets/store-prop-1.png' at thread -1
+Loading resource: res://assets/store-prop-2.png remapped: res://assets/store-prop-2.png
+Loading resource: res://.godot/imported/store-prop-2.png-a35150e13b14428374d65d3a2786eb8c.ctex remapped: res://.godot/imported/store-prop-2.png-a35150e13b14428374d65d3a2786eb8c.ctex
+Completed load for: 'res://assets/store-prop-2.png' remapped 'res://assets/store-prop-2.png' at thread -1
+Loading resource: res://assets/store-prop-3.png remapped: res://assets/store-prop-3.png
+Loading resource: res://.godot/imported/store-prop-3.png-048bdad29d4f0e0c63e1664cee0f03a5.ctex remapped: res://.godot/imported/store-prop-3.png-048bdad29d4f0e0c63e1664cee0f03a5.ctex
+Completed load for: 'res://assets/store-prop-3.png' remapped 'res://assets/store-prop-3.png' at thread -1
+Loading resource: res://assets/employee-modern.png remapped: res://assets/employee-modern.png
+Loading resource: res://.godot/imported/employee-modern.png-cb0d292a9352571004d2533b82a23b5f.ctex remapped: res://.godot/imported/employee-modern.png-cb0d292a9352571004d2533b82a23b5f.ctex
+Completed load for: 'res://assets/employee-modern.png' remapped 'res://assets/employee-modern.png' at thread -1
+Loading resource: res://assets/customer-modern.png remapped: res://assets/customer-modern.png
+Loading resource: res://.godot/imported/customer-modern.png-4f2e77802b1bf9a28003e4e4fea8de1b.ctex remapped: res://.godot/imported/customer-modern.png-4f2e77802b1bf9a28003e4e4fea8de1b.ctex
+Completed load for: 'res://assets/customer-modern.png' remapped 'res://assets/customer-modern.png' at thread -1
+Loading resource: res://assets/monster-0.png remapped: res://assets/monster-0.png
+Loading resource: res://.godot/imported/monster-0.png-d9e6b7638e673a2fcc0977ad4ab5a27b.ctex remapped: res://.godot/imported/monster-0.png-d9e6b7638e673a2fcc0977ad4ab5a27b.ctex
+Completed load for: 'res://assets/monster-0.png' remapped 'res://assets/monster-0.png' at thread -1
+Loading resource: res://assets/monster-1.png remapped: res://assets/monster-1.png
+Loading resource: res://.godot/imported/monster-1.png-1c8f6122c0dc99634499eb9a95692ef0.ctex remapped: res://.godot/imported/monster-1.png-1c8f6122c0dc99634499eb9a95692ef0.ctex
+Completed load for: 'res://assets/monster-1.png' remapped 'res://assets/monster-1.png' at thread -1
+Loading resource: res://assets/monster-2.png remapped: res://assets/monster-2.png
+Loading resource: res://.godot/imported/monster-2.png-c05b1d67c744eb3f7d2f9f0c4fe63939.ctex remapped: res://.godot/imported/monster-2.png-c05b1d67c744eb3f7d2f9f0c4fe63939.ctex
+Completed load for: 'res://assets/monster-2.png' remapped 'res://assets/monster-2.png' at thread -1
+Loading resource: res://assets/audio/threshold.wav remapped: res://assets/audio/threshold.wav
+Loading resource: res://.godot/imported/threshold.wav-400820fbda61df6fa869d2f6b2164dde.sample remapped: res://.godot/imported/threshold.wav-400820fbda61df6fa869d2f6b2164dde.sample
+Completed load for: 'res://assets/audio/threshold.wav' remapped 'res://assets/audio/threshold.wav' at thread -1
+Loading resource: res://assets/audio/after-hours.wav remapped: res://assets/audio/after-hours.wav
+Loading resource: res://.godot/imported/after-hours.wav-b91034e0cddaeef8c211eb10655c3207.sample remapped: res://.godot/imported/after-hours.wav-b91034e0cddaeef8c211eb10655c3207.sample
+Completed load for: 'res://assets/audio/after-hours.wav' remapped 'res://assets/audio/after-hours.wav' at thread -1
+Loading resource: res://assets/audio/unease.wav remapped: res://assets/audio/unease.wav
+Loading resource: res://.godot/imported/unease.wav-bd57eaa1d6989fb911a65d1ed57388bf.sample remapped: res://.godot/imported/unease.wav-bd57eaa1d6989fb911a65d1ed57388bf.sample
+Completed load for: 'res://assets/audio/unease.wav' remapped 'res://assets/audio/unease.wav' at thread -1
+Loading resource: res://assets/audio/presence.wav remapped: res://assets/audio/presence.wav
+Loading resource: res://.godot/imported/presence.wav-b8bc7d349f67fdbc6c6c5aa894a896ba.sample remapped: res://.godot/imported/presence.wav-b8bc7d349f67fdbc6c6c5aa894a896ba.sample
+Completed load for: 'res://assets/audio/presence.wav' remapped 'res://assets/audio/presence.wav' at thread -1
+Loading resource: res://assets/ui/hand-1.svg remapped: res://assets/ui/hand-1.svg
+Loading resource: res://.godot/imported/hand-1.svg-c2d174866336f2238186e1213c99f0b8.ctex remapped: res://.godot/imported/hand-1.svg-c2d174866336f2238186e1213c99f0b8.ctex
+Completed load for: 'res://assets/ui/hand-1.svg' remapped 'res://assets/ui/hand-1.svg' at thread -1
+Loading resource: res://assets/ui/map-1.svg remapped: res://assets/ui/map-1.svg
+Loading resource: res://.godot/imported/map-1.svg-50acc26c7922dc3bd71f2140ec2e2014.ctex remapped: res://.godot/imported/map-1.svg-50acc26c7922dc3bd71f2140ec2e2014.ctex
+Completed load for: 'res://assets/ui/map-1.svg' remapped 'res://assets/ui/map-1.svg' at thread -1
+Loading resource: res://assets/customer-woman.png remapped: res://assets/customer-woman.png
+Loading resource: res://.godot/imported/customer-woman.png-861fe75385dc9bc9e1112de463edb602.ctex remapped: res://.godot/imported/customer-woman.png-861fe75385dc9bc9e1112de463edb602.ctex
+Completed load for: 'res://assets/customer-woman.png' remapped 'res://assets/customer-woman.png' at thread -1
+Loading resource: res://assets/customer-courier.png remapped: res://assets/customer-courier.png
+Loading resource: res://.godot/imported/customer-courier.png-5a9c919758eb88c9a64bb7749dbe6e52.ctex remapped: res://.godot/imported/customer-courier.png-5a9c919758eb88c9a64bb7749dbe6e52.ctex
+Completed load for: 'res://assets/customer-courier.png' remapped 'res://assets/customer-courier.png' at thread -1
+Loading resource: res://assets/city.png remapped: res://assets/city.png
+Loading resource: res://.godot/imported/city.png-02b383d5b5b6aa591b88e70ba700cd66.ctex remapped: res://.godot/imported/city.png-02b383d5b5b6aa591b88e70ba700cd66.ctex
+Completed load for: 'res://assets/city.png' remapped 'res://assets/city.png' at thread -1
+Loading resource: res://assets/atelier.png remapped: res://assets/atelier.png
+Loading resource: res://.godot/imported/atelier.png-521db3fe4659ff2e878a331f294eadef.ctex remapped: res://.godot/imported/atelier.png-521db3fe4659ff2e878a331f294eadef.ctex
+Completed load for: 'res://assets/atelier.png' remapped 'res://assets/atelier.png' at thread -1
+Loading resource: res://assets/customer-woman.png remapped: res://assets/customer-woman.png
+Loading resource: res://.godot/imported/customer-woman.png-861fe75385dc9bc9e1112de463edb602.ctex remapped: res://.godot/imported/customer-woman.png-861fe75385dc9bc9e1112de463edb602.ctex
+Completed load for: 'res://assets/customer-woman.png' remapped 'res://assets/customer-woman.png' at thread -1
+Loading resource: res://assets/customer-senior.png remapped: res://assets/customer-senior.png
+Loading resource: res://.godot/imported/customer-senior.png-19c49830353dd5cfc885548bce5275cd.ctex remapped: res://.godot/imported/customer-senior.png-19c49830353dd5cfc885548bce5275cd.ctex
+Completed load for: 'res://assets/customer-senior.png' remapped 'res://assets/customer-senior.png' at thread -1
+Loading resource: res://assets/city.png remapped: res://assets/city.png
+Loading resource: res://.godot/imported/city.png-02b383d5b5b6aa591b88e70ba700cd66.ctex remapped: res://.godot/imported/city.png-02b383d5b5b6aa591b88e70ba700cd66.ctex
+Completed load for: 'res://assets/city.png' remapped 'res://assets/city.png' at thread -1
+PASS: walls, checkout side, gradual departure, fleeing, 4 visible events, adaptive music/mute, atelier entry, preview, persistence and exit
+XR: Clearing primary interface
+XR: Removed interface "Native mobile"
+XR: Removed interface "OpenXR"
+Leaked instance: AudioStreamPlaybackWAV:9223372073731098212 - Reference count: 1
+Leaked instance: AudioStreamWAV:9223372073680766566 - Reference count: 1
+Leaked instance: AudioStreamPlaybackWAV:9223372073949202024 - Reference count: 1
+Leaked instance: AudioStreamWAV:9223372073898870378 - Reference count: 1
+Leaked instance: AudioStreamPlaybackWAV:9223372074167305836 - Reference count: 1
+Leaked instance: AudioStreamWAV:9223372074116974190 - Reference count: 1
+Hint: Leaked instances typically happen when nodes are removed from the scene tree (with `remove_child()`) but not freed (with `free()` or `queue_free()`).
+Resource still in use: res://assets/audio/after-hours.wav (AudioStreamWAV)
+Resource still in use: res://assets/audio/unease.wav (AudioStreamWAV)
+Resource still in use: res://assets/audio/presence.wav (AudioStreamWAV)
+Orphan StringName: Master (static: 0, total: 6)
+StringName: 1 unclaimed string names at exit.
+WARNING: 6 ObjectDB instances were leaked at exit (run with `--verbose` for details).
+   at: cleanup (core/object/object.cpp:2536)
+ERROR: 3 resources still in use at exit.
+   at: clear (core/io/resource.cpp:817)
