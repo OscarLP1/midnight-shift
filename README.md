@@ -43,3 +43,5 @@ Animaciones: agente, tres monstruos, variantes de clientes y perro tienen ciclos
 Pulido: el cliente decide efectivo/tarjeta; la caja solo muestra y procesa su elección. Los avisos de unidades usan existencias reales. Clientes asustados corren sin cambiar de tamaño. Puerta corrediza animada y escondite con poses de agacharse, sin deformación del personaje; H invierte la secuencia para salir. Perros más lentos (64/74 px/s).
 
 Seguridad se abre con el icono de placa y funciona sin pausar; Esc lo cierra. La sirena acompaña la llegada de la patrulla. Al cruzar con detenidos, el agente abre las puertas, sale y las cierra antes de retirarse. El icono de pausa sí detiene la partida.
+
+Menú principal: Continuar, Nueva partida y Comandos. La guía también está en Pausa. Ya no hay botón Interactuar en pantalla: usa E; en táctil toca cerca del personaje, fuera del joystick. Esc vuelve desde la guía al menú de origen.

@@ -3,6 +3,8 @@ extends Node2D
 const UIStyles = preload("res://scripts/ui_styles.gd")
 const ExplorationUI = preload("res://scripts/exploration_ui.gd")
 var exploration := ExplorationUI.new()
+const MenuUI = preload("res://scripts/menu_ui.gd")
+var menus := MenuUI.new()
 var map_button: Button
 var security_panel: PanelContainer
 var street := 0
@@ -164,6 +166,7 @@ func _ready() -> void:
 	details.game = self
 	add_child(details)
 	commerce.setup(self)
+	menus.setup(self)
 	exploration.setup(self)
 	wardrobe.setup(self)
 	controls = CanvasLayer.new()
@@ -202,13 +205,12 @@ func _ready() -> void:
 	hint.add_theme_font_size_override("font_size",12)
 	hint.add_theme_color_override("font_color",Color("f1d29b"))
 	controls.add_child(hint)
-	button("Interactuar · E",Vector2(510,328),interact)
 	button("Cerrar turno",Vector2(510,4),finish)
 	button("Pausa",Vector2(425,4),pause_shift)
 	button("Reponer · R",Vector2(370,328),events.restock)
 	button("Seguridad",Vector2(16,328),open_security_menu)
 	button("Mapa · M",Vector2(510,48),open_map)
-	show_panel("TURNO DE MEDIANOCHE\nNoche tranquila, trabajo pendiente.\nWASD / flechas · E para interactuar\nTáctil: arrastra a la izquierda", "Nueva partida", start.bind(false), true)
+	menus.main_menu()
 
 func make_actor(asset: String, cell_size := Vector2i(32,48)) -> AnimatedSprite2D:
 	var sprite := AnimatedSprite2D.new()
@@ -249,7 +251,6 @@ func button(text: String, pos: Vector2, action: Callable) -> void:
 		b.icon = UIStyles.icon("map")
 	b.set_meta("compact_hud",true)
 	UIStyles.apply(b)
-	if text == "Interactuar · E": b.icon = UIStyles.icon("hand")
 	if text in ["Pausa","Seguridad"]:
 		var kind := "pause" if text=="Pausa" else "badge"
 		b.set_meta("hud_icon",kind)
@@ -293,6 +294,7 @@ func show_panel(text: String, action: String, callback: Callable, continuation :
 	controls.add_child(panel)
 
 func start(resume: bool) -> void:
+	set_game_controls_visible(true)
 	if resume:
 		var data := SaveStore.load_game()
 		money = clampi(int(data.get("money",100)),0,1000000)
@@ -454,7 +456,9 @@ func _input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_R: events.restock()
 	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_E: interact()
 	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_ESCAPE:
-		if is_instance_valid(security_panel):
+		if menus.commands_open:
+			menus.back()
+		elif is_instance_valid(security_panel):
 			close_security_menu()
 		else: pause_shift()
 
@@ -464,6 +468,8 @@ func pause_shift() -> void:
 	paused = true
 	joystick.reset()
 	show_panel("PAUSA\nTu partida está detenida.", "Reanudar", resume_shift)
+	panel.position.y = 48
+	add_panel_button("Comandos",menus.commands.bind(true))
 	add_panel_button("Diseño de botones e iconos · F2",open_styles)
 	add_panel_button("Activar sonido" if events.muted else "Silenciar música y efectos",toggle_audio)
 	add_audio_slider("Música",true)
@@ -696,7 +702,6 @@ func refresh_buttons(node: Node = null) -> void:
 			UIStyles.apply(child)
 			if child.has_meta("hud_icon"): child.icon = UIStyles.icon(child.get_meta("hud_icon"))
 			elif child==map_button: child.icon = UIStyles.icon("map")
-			elif child.text=="Interactuar · E": child.icon = UIStyles.icon("hand")
 		refresh_buttons(child)
 
 func toggle_audio() -> void:
@@ -757,3 +762,22 @@ func _process(_delta: float) -> void:
 	if is_instance_valid(security):
 		if is_instance_valid(security.officer): security.officer.pause()
 		if is_instance_valid(security.dog_sprite): security.dog_sprite.pause()
+
+func _unhandled_input(event: InputEvent) -> void:
+	if not active or not touch_controls: return
+	if event is InputEventScreenTouch and event.pressed:
+		if joystick.get_global_rect().has_point(event.position): return
+		if event.position.distance_to(player.position)<=55:
+			interact()
+			get_viewport().set_input_as_handled()
+
+func set_game_controls_visible(value: bool) -> void:
+	for child in controls.get_children():
+		if child is Button: child.visible = value
+	joystick.visible = value and touch_controls
+	hud.visible = value
+	hint.visible = value
+	message.visible = value
+	if value:
+		map_button.visible = location=="city"
+		update_hint()
