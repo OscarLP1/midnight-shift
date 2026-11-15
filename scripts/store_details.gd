@@ -25,8 +25,6 @@ func _draw() -> void:
 		var x := 46.0+i*112.0
 		if game.events.spoiled[i]:
 			draw_rect(Rect2(x,56,101,27),Color(0.03,0.09,0.12,0.94))
-		var status: String = "DAÑADA" if game.events.spoiled[i] else ("ABIERTA" if game.events.open_doors[i] else "CERRADA")
-		draw_string(ThemeDB.fallback_font,Vector2(x,94),status+" · "+str(game.zone_stock[i+3]),HORIZONTAL_ALIGNMENT_LEFT,-1,8,Color("efb56d") if game.events.open_doors[i] else Color("b4ddce"))
 		if amounts[i]>0:
 			var edge: float = x+38+amounts[i]*35
 			draw_rect(Rect2(edge,55,30,29),Color(0.35,0.65,0.72,0.16))

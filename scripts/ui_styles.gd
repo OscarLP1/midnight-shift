@@ -16,6 +16,11 @@ static func apply(button: Button, primary := false, preset := -1) -> void:
 		box.bg_color = accents[index] if primary else fills[index]
 		box.border_color = accents[index]
 		box.set_border_width_all(2 if index==1 else 1)
+		if button.get_meta("compact_hud",false):
+			box.content_margin_left = 5
+			box.content_margin_right = 5
+			box.content_margin_top = 2
+			box.content_margin_bottom = 2
 		box.set_corner_radius_all(0 if index==1 else 4)
 		if state=="hover": box.bg_color = box.bg_color.lightened(0.15)
 		if state=="pressed": box.bg_color = box.bg_color.darkened(0.15)
@@ -27,7 +32,7 @@ static func apply(button: Button, primary := false, preset := -1) -> void:
 	button.add_theme_color_override("font_hover_color",fills[index] if primary else texts[index])
 	button.add_theme_color_override("font_pressed_color",texts[index])
 	button.add_theme_color_override("font_disabled_color",texts[index].darkened(0.35))
-	button.add_theme_font_size_override("font_size",13)
+	button.add_theme_font_size_override("font_size",11 if button.get_meta("compact_hud",false) else 13)
 
 static func icon(kind: String, preset := -1) -> Texture2D:
 	var index := selected if preset<0 else preset

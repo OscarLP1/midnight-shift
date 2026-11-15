@@ -15,10 +15,11 @@ func run() -> void:
 		if not game.crowd.first().is_empty(): break
 	var person: Dictionary = game.crowd.first()
 	assert(not person.is_empty() and person.items.size()==person.basket)
+	person.payment = "cash"
 	game.interact()
 	await process_frame
 	assert(game.panel.size.x<=608 and game.panel.size.y<=328)
-	game.set_payment("cash")
+	game.set_payment("card")
 	await process_frame
 	assert(game.payment_method=="cash" and game.money==100)
 	game.cancel_checkout()
@@ -26,10 +27,10 @@ func run() -> void:
 	assert(game.active and game.stock==12 and game.crowd.first()==person)
 	game.interact()
 	await process_frame
-	game.set_payment("cash")
+	game.set_payment("card")
 	await process_frame
 	game.complete_sale()
-	var expected: int = 100+person.basket*4
+	var expected: int = 100+game.revenue
 	assert(game.money==expected and game.sold==1)
 	game.complete_sale()
 	assert(game.money==expected)

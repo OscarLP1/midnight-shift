@@ -43,7 +43,7 @@ func run() -> void:
  g.player.position = g.CASHIER
  g.security.hide_player()
  for i in range(60): g.security._process(1.0/60)
- assert(g.security.hide_amount>0.9 and g.actor.modulate.a<0.1)
+ assert(g.security.hide_amount>0.9 and not g.actor.visible and g.security.hiding_actor.visible and g.security.hiding_actor.scale==Vector2.ONE)
  g.security.hide_player()
  g.security.closed = false
  g.security.spawn_dog()

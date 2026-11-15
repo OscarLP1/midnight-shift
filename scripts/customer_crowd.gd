@@ -80,7 +80,7 @@ func spawn() -> void:
 		targets.append(SPOTS[indexes[pick]])
 		indexes.remove_at(pick)
 	serial += 1
-	var p := {"id":serial,"node":body,"sprite":sprite,"bubble":bubble,"look":look,"state":"shopping","targets":targets,"path":PackedVector2Array(),"wait":0.0,"patience":rng.randf_range(55,110),"speed":rng.randf_range(36,49),"basket":0,"items":[],"thief":not thief_times.is_empty() and game.elapsed>=thief_times[0],"evidence":false,"lost":false}
+	var p := {"id":serial,"node":body,"sprite":sprite,"bubble":bubble,"look":look,"state":"shopping","targets":targets,"path":PackedVector2Array(),"wait":0.0,"patience":rng.randf_range(55,110),"speed":rng.randf_range(36,49),"basket":0,"items":[],"thief":not thief_times.is_empty() and game.elapsed>=thief_times[0],"evidence":false,"lost":false,"payment":"cash" if rng.randf()<0.5 else "card"}
 	if p.thief:
 		thief_times.pop_front()
 		thieves_spawned += 1
@@ -116,7 +116,7 @@ func tick(delta: float) -> void:
 		withdrawal_in -= delta
 		if withdrawal_in<=0:
 			for visitor in people:
-				if visitor.state not in ["leaving","arrested","fleeing"]:
+				if visitor.state not in ["leaving","arrested","fleeing","panicking","waiting_exit"]:
 					leave(visitor)
 					break
 			withdrawal_in = 12.0
@@ -125,17 +125,26 @@ func tick(delta: float) -> void:
 		spawn_in = rng.randf_range(7,13)
 	for p in people.duplicate():
 		if p.state=="arrested": continue
-		if not p.thief and game.security.closed and (game.security.danger() or game.security.police_state!="idle") and p.state!="sheltering":
+		var alarm: bool = game.security.danger() or game.security.police_state=="chasing"
+		if not p.thief and p.node.position.y<=280 and alarm and p.state!="panicking":
 			queue.erase(p)
-			p.state = "sheltering"
-			plan(p,Vector2(184+(p.id%3)*24,264))
-		if p.state=="sheltering":
-			p.bubble.text = "A salvo · esperando"
-			if not game.security.closed and not game.security.danger():
-				p.sprite.scale = Vector2.ONE
+			p.state = "panicking"
+			p.speed = rng.randf_range(82,100)
+			p.calm_in = 2.0
+			p.sprite.scale = Vector2.ONE
+			panic_route(p)
+		if p.state=="panicking":
+			p.bubble.text = ""
+			p.calm_in = 2.0 if alarm else maxf(0,p.calm_in-delta)
+			if p.calm_in<=0:
+				p.speed = 55
 				leave(p)
+			elif p.path.is_empty(): panic_route(p)
+		if p.state=="waiting_exit":
+			p.bubble.text = ""
+			if not game.security.closed: leave(p)
 			elif p.path.is_empty():
-				p.sprite.scale.y = 0.65
+				Motion.animate(p.sprite,Vector2.ZERO)
 				continue
 		if p.state=="fleeing" and not game.security.closed and game.security.police_state=="idle": leave(p)
 		if p.state=="queue" and not p.thief:
@@ -153,8 +162,12 @@ func tick(delta: float) -> void:
 					p.speed = 95
 					plan(p,SPOTS[rng.randi_range(0,7)])
 				else:
-					p.state = "sheltering"
-					plan(p,Vector2(184+(p.id%3)*24,264))
+					p.state = "panicking" if alarm else "waiting_exit"
+					if alarm:
+						p.speed = rng.randf_range(82,100)
+						p.calm_in = 2.0
+						panic_route(p)
+					else: plan(p,Vector2(296+(p.id%3)*24,264))
 				continue
 			var before: Vector2 = p.node.position
 			p.node.position = p.node.position.move_toward(target,p.speed*delta)
@@ -206,7 +219,8 @@ func tick(delta: float) -> void:
 				leave(p)
 		elif p.state == "queue":
 			p.wait += delta
-			p.bubble.text = "%d artículos" % p.basket
+			var units: int = game.available_items(p).size()
+			p.bubble.text = "%d artículo%s" % [units,"" if units==1 else "s"]
 			if p.wait>p.patience: leave(p)
 		elif p.state == "leaving":
 			if p.thief and p.evidence and not p.lost:
@@ -240,7 +254,22 @@ func intervene() -> bool:
 
 func frighten() -> void:
 	for p in people:
-		if p.state in ["arrested","sheltering"]: continue
+		if p.state in ["arrested","panicking"]: continue
 		leave(p)
 		p.speed = 105.0
 		p.bubble.text = "¡Vámonos!"
+
+func panic_route(p: Dictionary) -> void:
+	var best := Vector2.ZERO
+	var score := -INF
+	for spot in SPOTS:
+		if spot.distance_to(p.node.position)<70 or spot==p.get("panic_target",Vector2.ZERO): continue
+		var safety := 300.0
+		for suspect in people:
+			if suspect.thief and suspect.state!="arrested": safety = minf(safety,spot.distance_to(suspect.node.position))
+		var candidate := safety+rng.randf_range(0,100)
+		if candidate>score:
+			score = candidate
+			best = spot
+	p.panic_target = best
+	plan(p,best)

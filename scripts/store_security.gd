@@ -1,6 +1,11 @@
 extends Node2D
 var game
 var hide_amount := 0.0
+var hiding_actor: AnimatedSprite2D
+var hide_direction := 1
+var entrance_view: Node2D
+var dropping: Texture2D
+var hide_material: ShaderMaterial
 var wheel_phase := 0.0
 var arrested_total := 0
 var dog_caught := false
@@ -27,17 +32,43 @@ var stolen_zone := 0
 var dog_wait := 0.0
 var patrol_x := -90.0
 var patrol_texture: Texture2D
-const DOG_TROT_SPEED := 75.0
-const DOG_ESCAPE_SPEED := 88.0
+const DOG_TROT_SPEED := 64.0
+const DOG_ESCAPE_SPEED := 74.0
 const PATROL_WHEEL_CENTERS = [Vector2(20,30),Vector2(69,30)]
 func _process(delta: float) -> void:
 	if game==null: return
 	visible = game.location=="store"
 	if game.active:
 		hide_amount = move_toward(hide_amount,1.0 if hiding else 0.0,delta*3)
-	game.actor.scale.y = lerpf(1.0,0.3,hide_amount)*(1.6 if game.location in ["cafe","hardware","atelier"] else 1.0)
-	game.actor.position.y = lerpf(-20,-5,hide_amount)
-	game.actor.modulate.a = 1.0-hide_amount
+	if not is_instance_valid(entrance_view):
+		entrance_view = preload("res://scripts/entrance_view.gd").new()
+		entrance_view.game = game
+		entrance_view.z_index = 2
+		add_child(entrance_view)
+	if not is_instance_valid(hiding_actor):
+		hiding_actor = game.make_actor("employee-hide")
+		hiding_actor.z_index = 3
+		hide_material = ShaderMaterial.new()
+		hide_material.shader = preload("res://scripts/hide_palette.gdshader")
+		var image: Image = load("res://assets/employee-hide.png").get_image()
+		var tops := PackedFloat32Array()
+		for row in range(4):
+			for col in range(4): tops.append(image.get_region(Rect2i(col*32,row*48,32,48)).get_used_rect().position.y)
+		hide_material.set_shader_parameter("head_top",tops)
+		hiding_actor.material = hide_material
+		hiding_actor.pause()
+		game.player.add_child(hiding_actor)
+	game.actor.visible = hide_amount<=0.001
+	game.actor.modulate.a = 1
+	if hide_amount>0:
+		hide_material.set_shader_parameter("jacket",game.wardrobe.COLORS[game.wardrobe.saved[2]])
+		hide_material.set_shader_parameter("hair",game.wardrobe.HAIR_COLORS[game.wardrobe.saved[3]])
+		hiding_actor.animation = str(hide_direction)
+		hiding_actor.pause()
+		hiding_actor.frame = mini(3,int(hide_amount*4))
+		hiding_actor.position = Vector2(0,lerpf(-20,-37,hide_amount))
+		hiding_actor.visible = game.location=="store"
+	else: hiding_actor.visible = false
 	if is_instance_valid(dog): dog.visible = visible
 	if is_instance_valid(officer): officer.visible = visible
 	queue_redraw()
@@ -72,8 +103,11 @@ func hide_player() -> void:
 		game.message.text = "Acércate al mostrador para esconderte."
 		return
 	hiding = not hiding
-	if hiding: game.player.position = game.CASHIER
-	game.actor.z_index = -1 if hiding else 0
+	if hiding:
+		game.player.position = game.CASHIER
+		hide_direction = 1
+		game.player.velocity = Vector2.ZERO
+	game.actor.z_index = 0
 	game.message.text = "Bajo el mostrador · H para salir." if hiding else "Has salido del escondite."
 func call_police() -> void:
 	if not game.active or game.location!="store" or police>=0 or police_state!="idle": return
@@ -166,14 +200,10 @@ func interact() -> bool:
 	return false
 func _draw() -> void:
 	if game==null: return
-	if hide_amount>0.9:
-		draw_string(ThemeDB.fallback_font,game.CASHIER+Vector2(-28,8),"OCULTO",HORIZONTAL_ALIGNMENT_LEFT,-1,10,Color.WHITE)
-	if closed:
-		draw_rect(Rect2(279,282,80,5),Color("977854"))
-		draw_line(Vector2(310,281),Vector2(310,288),Color("eed49c"),2)
+
+	if dropping==null: dropping = load("res://assets/dog-dropping.png")
 	for pos in dirt:
-		draw_circle(pos,4,Color("63442c"))
-		draw_circle(pos+Vector2(2,-3),3,Color("775136"))
+		draw_texture_rect(dropping,Rect2(pos-Vector2(7,7),Vector2(14,9)),false)
 	if patrol_time>0 and patrol_texture!=null:
 		draw_texture_rect(patrol_texture,Rect2(patrol_x,308,88,38),false)
 		for offset in PATROL_WHEEL_CENTERS:

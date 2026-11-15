@@ -235,7 +235,7 @@ func button(text: String, pos: Vector2, action: Callable) -> void:
 	b.text = text
 	b.position = pos
 	if touch_controls and b.position.y>316: b.position.y = 316
-	b.custom_minimum_size = Vector2(76,40 if touch_controls else 28)
+	b.custom_minimum_size = Vector2(64,34 if touch_controls else 23)
 	b.pressed.connect(action)
 	style_control(b)
 	if text in ["Cerrar turno", "Reponer · R", "Seguridad"]: shift_buttons.append(b)
@@ -246,9 +246,11 @@ func button(text: String, pos: Vector2, action: Callable) -> void:
 		map_button = b
 		b.visible = false
 		b.icon = UIStyles.icon("map")
+	b.set_meta("compact_hud",true)
+	UIStyles.apply(b)
 	if text == "Interactuar · E": b.icon = UIStyles.icon("hand")
 	b.expand_icon = true
-	b.add_theme_constant_override("icon_max_width",18)
+	b.add_theme_constant_override("icon_max_width",14)
 	controls.add_child(b)
 
 func show_panel(text: String, action: String, callback: Callable, continuation := false) -> void:
@@ -372,6 +374,9 @@ func _physics_process(delta: float) -> void:
 
 func interact() -> void:
 	if not active: return
+	if security.hiding:
+		message.text = "Pulsa H para salir del escondite antes de atender."
+		return
 	if location == "city":
 		city_interact()
 		return
@@ -391,7 +396,7 @@ func interact() -> void:
 	active = false
 	transaction_open = true
 	joystick.reset()
-	payment_method = "card"
+	payment_method = checkout_person.get("payment","card")
 	soundscape.play("scan")
 	commerce.checkout()
 
@@ -552,6 +557,9 @@ func update_hint() -> void:
 	elif location in ["cafe","hardware","atelier"]:
 		hint.text = "E · Salir a la calle" if player.position.y>285 else ("E · Hablar en el mostrador" if player.position.y<175 else "Acércate al mostrador o explora el local")
 	else:
+		if security.hiding:
+			hint.text = "H · Salir del mostrador"
+			return
 		hint.text = "E · Abrir / cerrar nevera · R reponer" if player.position.y<116 else ("E · Atender en caja" if player.position.distance_to(CASHIER)<28 else ("E · Examinar productos y precios" if events.shelf_near(player.position)>=0 else "Explora los pasillos"))
 
 func city_interact() -> void:
@@ -637,10 +645,9 @@ func interior_interact() -> void:
 	else:
 		message.text = "Mostrador al fondo · Salida por la alfombra de entrada."
 
-func set_payment(method: String) -> void:
-	if not transaction_open or method not in ["card","cash"]: return
-	payment_method = method
-	commerce.checkout()
+func set_payment(_method: String) -> void:
+	# The customer keeps the same tender even if the checkout is reopened.
+	if transaction_open: payment_method = checkout_person.get("payment","card")
 
 func cancel_checkout() -> void:
 	transaction_open = false
@@ -688,9 +695,12 @@ func product_zone(product: String) -> int:
 	return ["Agua Bruma","Jugo Aurora","Leche Alba","Yogur Nieve","Queso Fresco"].find(product)+3
 
 func checkout_items() -> Array[String]:
+	return available_items(checkout_person)
+
+func available_items(person: Dictionary) -> Array[String]:
 	var available := zone_stock.duplicate()
 	var result: Array[String] = []
-	for product in checkout_person.get("items",[]):
+	for product in person.get("items",[]):
 		var zone := product_zone(product)
 		if zone>=0 and zone<8 and available[zone]>0:
 			result.append(product)
