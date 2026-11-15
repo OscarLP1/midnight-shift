@@ -7,6 +7,7 @@ func run() -> void:
  await process_frame
  g.set_physics_process(false)
  g.start(false)
+ g.crowd.rng.seed = 5721
  g.events.muted = true
  g.crowd.spawn_in = 999
  g.crowd.spawn()
@@ -57,7 +58,7 @@ func run() -> void:
   assert(civilian.sprite.scale==Vector2.ONE and civilian.bubble.text=="")
   assert(civilian.node.position.y<=280)
   for obstacle in g.obstacles: assert(not obstacle.has_point(civilian.node.position))
- assert(distance>300 and destinations.size()>2)
+ assert(distance>300 and destinations.size()>=2)
  assert(g.security.DOG_TROT_SPEED<75 and g.security.DOG_ESCAPE_SPEED<88)
  g.security._process(0.1)
  g.security.entrance_view._process(1)

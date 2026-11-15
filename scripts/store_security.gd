@@ -11,6 +11,9 @@ var arrested_total := 0
 var dog_caught := false
 var escort_trail: Array[Vector2] = []
 var closed := false
+var police_access := false
+var passage_exiting := false
+var gate_wait := 0.0
 var hiding := false
 var police := -1.0
 var dog: Node2D
@@ -81,6 +84,8 @@ func reset() -> void:
 	patrol_time = 0
 	if is_instance_valid(officer): officer.free()
 	closed = false
+	police_access = false
+	gate_wait = 0
 	hiding = false
 	police = -1
 	dog_in = 35
@@ -225,6 +230,9 @@ func move_officer(delta: float) -> void:
 	if officer_path.is_empty():
 		game.Motion.animate(officer,Vector2.ZERO)
 		return
+	if not police_passage_ready(officer.position,officer_path[0]):
+		game.Motion.animate(officer,Vector2.ZERO)
+		return
 	var before: Vector2 = officer.position
 	officer.position = officer.position.move_toward(officer_path[0],120*delta)
 	game.Motion.animate(officer,officer.position-before,120)
@@ -244,6 +252,10 @@ func begin_chase() -> void:
 	game.crowd.reorder()
 
 func tick_police(delta: float) -> void:
+	gate_wait = maxf(0,gate_wait-delta)
+	if police_access and police_state=="chasing" and is_instance_valid(officer) and ((not passage_exiting and officer.position.y<=264) or (passage_exiting and officer.position.y>=312)):
+		police_access = false
+		game.soundscape.play("door-soft")
 	if police>=0:
 		police -= delta
 		if police<=0:
@@ -316,6 +328,10 @@ func tick_police(delta: float) -> void:
 			var leader: Dictionary = detainees[0]
 			var before: Vector2 = leader.node.position
 			if not leader.path.is_empty():
+				if not police_passage_ready(leader.node.position,leader.path[0]):
+					game.Motion.animate(leader.sprite,Vector2.ZERO)
+					game.Motion.animate(officer,Vector2.ZERO)
+					return
 				leader.node.position = leader.node.position.move_toward(leader.path[0],75*delta)
 				if leader.node.position.distance_to(leader.path[0])<0.5: leader.path.remove_at(0)
 			game.Motion.animate(leader.sprite,leader.node.position-before,75)
@@ -336,8 +352,14 @@ func tick_police(delta: float) -> void:
 			p.node.queue_free()
 		detainees.clear()
 		officer.queue_free()
-		police_state = "departing"
+		closed = true
+		police_access = false
+		gate_wait = 0.7
+		game.soundscape.play("door-soft")
+		police_state = "securing_exit"
 		game.message.text = "La patrulla se lleva a %d detenido(s)." % count if count>0 else "La patrulla termina la revisión sin detenidos."
+	elif police_state=="securing_exit":
+		if gate_wait<=0: police_state = "departing"
 	elif police_state=="departing":
 		var previous_x := patrol_x
 		patrol_x = move_toward(patrol_x,740,110*delta)
@@ -345,3 +367,14 @@ func tick_police(delta: float) -> void:
 		if patrol_x==740:
 			police_state = "idle"
 			patrol_time = 0
+
+func police_passage_ready(from: Vector2, target: Vector2) -> bool:
+	if police_access: return gate_wait<=0
+	if not closed: return true
+	if absf(target.y-from.y)>0.1 and minf(from.y,target.y)<=310 and maxf(from.y,target.y)>=268:
+		police_access = true
+		passage_exiting = target.y>from.y
+		gate_wait = 0.7
+		game.soundscape.play("door-soft")
+		return false
+	return true

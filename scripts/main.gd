@@ -4,6 +4,7 @@ const UIStyles = preload("res://scripts/ui_styles.gd")
 const ExplorationUI = preload("res://scripts/exploration_ui.gd")
 var exploration := ExplorationUI.new()
 var map_button: Button
+var security_panel: PanelContainer
 var street := 0
 var soundscape: Node
 var security: Node2D
@@ -249,11 +250,21 @@ func button(text: String, pos: Vector2, action: Callable) -> void:
 	b.set_meta("compact_hud",true)
 	UIStyles.apply(b)
 	if text == "Interactuar · E": b.icon = UIStyles.icon("hand")
+	if text in ["Pausa","Seguridad"]:
+		var kind := "pause" if text=="Pausa" else "badge"
+		b.set_meta("hud_icon",kind)
+		b.text = ""
+		b.icon = UIStyles.icon(kind)
+		b.tooltip_text = "Pausa · Esc" if kind=="pause" else "Seguridad · La tienda sigue activa"
+		b.custom_minimum_size = Vector2(30,30)
+		b.size = Vector2(30,30)
+		b.flat = true
 	b.expand_icon = true
-	b.add_theme_constant_override("icon_max_width",14)
+	b.add_theme_constant_override("icon_max_width",20 if text in ["Pausa","Seguridad"] else 14)
 	controls.add_child(b)
 
 func show_panel(text: String, action: String, callback: Callable, continuation := false) -> void:
+	close_security_menu()
 	if is_instance_valid(panel): panel.queue_free()
 	joystick.reset()
 	panel = PanelContainer.new()
@@ -443,7 +454,9 @@ func _input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_R: events.restock()
 	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_E: interact()
 	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_ESCAPE:
-		pause_shift()
+		if is_instance_valid(security_panel):
+			close_security_menu()
+		else: pause_shift()
 
 func pause_shift() -> void:
 	if not active: return
@@ -681,7 +694,8 @@ func refresh_buttons(node: Node = null) -> void:
 	for child in node.get_children():
 		if child is Button:
 			UIStyles.apply(child)
-			if child==map_button: child.icon = UIStyles.icon("map")
+			if child.has_meta("hud_icon"): child.icon = UIStyles.icon(child.get_meta("hud_icon"))
+			elif child==map_button: child.icon = UIStyles.icon("map")
 			elif child.text=="Interactuar · E": child.icon = UIStyles.icon("hand")
 		refresh_buttons(child)
 
@@ -717,18 +731,18 @@ func update_street_geometry() -> void:
 
 func open_security_menu() -> void:
 	if not active or location!="store": return
-	active = false
-	show_panel("SEGURIDAD
-Entrada: %s · Patrulla: %s" % ["cerrada" if security.closed else "abierta",security.police_state],"Volver",close_city_panel)
-	add_panel_button("Abrir entrada · B" if security.closed else "Cerrar entrada · B",func():
-		close_city_panel()
-		security.toggle_door())
-	add_panel_button("Llamar a la policía · P",func():
-		close_city_panel()
-		security.call_police(),security.police>=0 or security.police_state!="idle")
-	add_panel_button("Salir del escondite · H" if security.hiding else "Esconderse · H",func():
-		close_city_panel()
-		security.hide_player())
+	if is_instance_valid(security_panel):
+		close_security_menu()
+		return
+	security_panel = preload("res://scripts/security_controls.gd").new()
+	security_panel.setup(self)
+	controls.add_child(security_panel)
+
+func close_security_menu() -> void:
+	if is_instance_valid(security_panel):
+		security_panel.hide()
+		security_panel.queue_free()
+	security_panel = null
 
 func cold_stock() -> int:
 	return zone_stock.slice(3).reduce(func(a,b): return a+b,0)
@@ -736,6 +750,7 @@ func shelf_stock() -> int:
 	return zone_stock.slice(0,3).reduce(func(a,b): return a+b,0)
 
 func _process(_delta: float) -> void:
+	if is_instance_valid(security_panel) and (not active or location!="store"): close_security_menu()
 	if active: return
 	if is_instance_valid(actor): actor.pause()
 	for person in crowd.people: person.sprite.pause()

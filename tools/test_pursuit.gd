@@ -57,7 +57,7 @@ func run() -> void:
  assert(not thief.escape_allowed)
  g.open_security_menu()
  await process_frame
- assert(g.panel.position.y+g.panel.size.y<=360)
+ assert(g.security_panel.position.y+g.security_panel.size.y<=360 and g.active)
  print("PASS: closed exits, car parks before officer, pursuit/custody/departure, dog route/action diversity, no thief checkout, 50 percent open-door draws, zero closed-door escape, UI bounds")
  g.free()
  await process_frame

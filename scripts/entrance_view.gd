@@ -4,7 +4,7 @@ var closure := 0.0
 func _process(delta: float) -> void:
 	if game==null: return
 	visible = game.location=="store"
-	if game.active: closure = move_toward(closure,1.0 if game.security.closed else 0.0,delta*1.6)
+	if game.active: closure = move_toward(closure,1.0 if game.security.closed and not game.security.police_access else 0.0,delta*1.6)
 	queue_redraw()
 func _draw() -> void:
 	if game==null: return

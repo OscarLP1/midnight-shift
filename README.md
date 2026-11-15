@@ -41,3 +41,5 @@ Actualización de comportamiento: HUD separa Neveras/Estantes. E sujeta perros y
 Animaciones: agente, tres monstruos, variantes de clientes y perro tienen ciclos completos en cuatro direcciones. El perseguidor gruñe y grita cerca; la criatura con astas lanza alaridos y el fantasma azul solloza. Son efectos sintetizados originales. Pausa detiene marcha y vocalización. Preparación reproducible: tools/prepare_walk_cycles.py y tools/compose_creature_voices.py.
 
 Pulido: el cliente decide efectivo/tarjeta; la caja solo muestra y procesa su elección. Los avisos de unidades usan existencias reales. Clientes asustados corren sin cambiar de tamaño. Puerta corrediza animada y escondite con poses de agacharse, sin deformación del personaje; H invierte la secuencia para salir. Perros más lentos (64/74 px/s).
+
+Seguridad se abre con el icono de placa y funciona sin pausar; Esc lo cierra. La sirena acompaña la llegada de la patrulla. Al cruzar con detenidos, el agente abre las puertas, sale y las cierra antes de retirarse. El icono de pausa sí detiene la partida.
