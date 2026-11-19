@@ -8,6 +8,7 @@ var menus := MenuUI.new()
 var map_button: Button
 var security_panel: PanelContainer
 var hud_bands: Control
+var responsive_ui: Node
 var street := 0
 const District = preload("res://scripts/district_layout.gd")
 var world_camera: Camera2D
@@ -42,6 +43,9 @@ var cafe_used := false
 var hint: Label
 var restock_button: Button
 var touch_controls := OS.has_feature("mobile") or DisplayServer.is_touchscreen_available()
+var interaction_finger := -1
+var interaction_started := 0
+var interaction_origin := Vector2.ZERO
 const SaveStore = preload("res://scripts/save_store.gd")
 const NightEvents = preload("res://scripts/weather_events.gd")
 var events: NightEvents
@@ -62,10 +66,12 @@ const SHIFT_START_HOUR := 22
 var money := 100
 var night := 1
 var sold := 0
+var product_counts: Dictionary = {}
 var zone_stock: Array[int] = [2,2,2,2,1,1,1,1]
 var stock: int:
 	get: return zone_stock.reduce(func(a,b): return a+b,0)
 	set(value):
+		product_counts.clear()
 		zone_stock.assign([0,0,0,0,0,0,0,0])
 		for i in range(maxi(0,value)): zone_stock[i%8] += 1
 var elapsed := 0.0
@@ -98,6 +104,7 @@ func _ready() -> void:
 	background.texture = load("res://assets/store-modern.png")
 	dry_night_material = ShaderMaterial.new()
 	dry_night_material.shader = preload("res://scripts/dry_night.gdshader")
+	dry_night_material.set_shader_parameter("clean_fridges",preload("res://assets/art_direction/fridge-clean-interiors-source.png"))
 	dry_night_material.set_shader_parameter("dry_exterior",preload("res://assets/art_direction/store-night-sidewalks-source.png"))
 	background.material = dry_night_material
 	background.centered = false
@@ -110,9 +117,11 @@ func _ready() -> void:
 		prop.texture = load("res://assets/store-prop-%d.png" % i)
 		prop.centered = false
 		if i==3:
-			var cutout := ShaderMaterial.new()
-			cutout.shader = preload("res://scripts/counter_cutout.gdshader")
-			prop.material = cutout
+			var counter_frame := AtlasTexture.new()
+			counter_frame.atlas = preload("res://assets/counter-opening.png")
+			counter_frame.region = Rect2(0,0,96,61)
+			counter_frame.filter_clip = true
+			prop.texture = counter_frame
 		var depth: float = 228 if i==3 else rect.end.y
 		prop.position = Vector2(rect.position.x,depth)
 		prop.offset.y = rect.position.y-depth
@@ -233,12 +242,15 @@ func _ready() -> void:
 	UIStyles.apply_label(hint,UIStyles.FONT_BODY)
 	hint.add_theme_color_override("font_color",Color("f1d29b"))
 	controls.add_child(hint)
-	button("Cerrar turno",Vector2(508,5),finish)
+	button("Cerrar turno",Vector2(506,4),finish)
 	button("Pausa",Vector2(602,2),pause_shift)
 	button("Reponer · R",Vector2(510,379),events.restock)
-	button("Seguridad",Vector2(466,2),open_security_menu)
+	button("Seguridad",Vector2(468,2),open_security_menu)
 	button("Mapa · M",Vector2(510,379),open_map)
 	menus.main_menu()
+	responsive_ui = preload("res://scripts/responsive_ui.gd").new()
+	responsive_ui.game = self
+	add_child(responsive_ui)
 
 func make_actor(asset: String, cell_size := Vector2i(32,48)) -> AnimatedSprite2D:
 	var sprite := AnimatedSprite2D.new()
@@ -272,11 +284,16 @@ func add_actor_frames(frames: SpriteFrames, texture: Texture2D, cell_size: Vecto
 		for frame in range(columns):
 			var region := AtlasTexture.new()
 			region.atlas = texture
+			region.filter_clip = true
 			region.region = Rect2(frame*cell_size.x,direction*cell_size.y,cell_size.x,cell_size.y)
 			frames.add_frame(key,region)
 
 func button(text: String, pos: Vector2, action: Callable) -> void:
 	var b := Button.new()
+	b.set_meta("hud_action",text)
+	b.clip_text = true
+	b.expand_icon = true
+	b.mouse_filter = Control.MOUSE_FILTER_STOP
 	b.text = text
 	b.position = pos
 	if touch_controls and b.position.y>360: b.position.y = 370
@@ -305,6 +322,14 @@ func button(text: String, pos: Vector2, action: Callable) -> void:
 	b.expand_icon = true
 	b.add_theme_constant_override("icon_max_width",20 if text in ["Pausa","Seguridad"] else 14)
 	controls.add_child(b)
+	var extent := Vector2(88,26)
+	if text in ["Pausa","Seguridad"]: extent = Vector2(30,30)
+	elif text == "Mapa · M": extent = Vector2(88,26)
+	b.custom_minimum_size = extent
+	b.size = extent
+	b.set_deferred("size",extent)
+	if text in ["Reponer · R","Mapa · M"]:
+		b.position = Vector2(538,371)
 
 func show_panel(text: String, action: String, callback: Callable, continuation := false) -> void:
 	close_security_menu()
@@ -341,8 +366,10 @@ func start(resume: bool) -> void:
 		money = clampi(int(data.get("money",100)),0,1000000)
 		night = maxi(1,int(data.get("night",1)))
 		progression.restore(data.get("upgrades",[]) if data.get("upgrades",[]) is Array else [])
+		product_counts = data.get("products",{}).duplicate()
 		stock = clampi(int(data.get("stock",12)),0,progression.capacity())
 		if data.get("inventory") is Array and data.inventory.size()==8:
+			product_counts = data.get("products",{}).duplicate()
 			for i in range(8): zone_stock[i] = clampi(int(data.inventory[i]),0,progression.capacity())
 		if data.get("location") == "city":
 			enter_city()
@@ -409,7 +436,8 @@ func _physics_process(delta: float) -> void:
 	var axis := Vector2(float(Input.is_physical_key_pressed(KEY_D) or Input.is_physical_key_pressed(KEY_RIGHT))-float(Input.is_physical_key_pressed(KEY_A) or Input.is_physical_key_pressed(KEY_LEFT)),float(Input.is_physical_key_pressed(KEY_S) or Input.is_physical_key_pressed(KEY_DOWN))-float(Input.is_physical_key_pressed(KEY_W) or Input.is_physical_key_pressed(KEY_UP)))
 	if touch_vector.length() > 0.1: axis = touch_vector
 	var before := player.position
-	player.velocity = player.velocity.move_toward(axis.limit_length()*(145 if Input.is_physical_key_pressed(KEY_SHIFT) else 90)*(0 if security.hiding else 1),720*delta)
+	var sprint := Input.is_physical_key_pressed(KEY_SHIFT) or (touch_controls and touch_vector.length()>0.92)
+	player.velocity = player.velocity.move_toward(axis.limit_length()*(145 if sprint else 90)*(0 if security.hiding else 1),720*delta)
 	player.move_and_slide()
 	player.position = player.position.clamp(Vector2(46,104),Vector2(594,272)) if location == "store" else (player.position.clamp(District.walk_min(street),District.WALK_MAX) if location == "city" else player.position.clamp(District.room_point(location,Vector2(40,158)),District.room_point(location,Vector2(600,320))))
 	update_world_camera()
@@ -468,7 +496,7 @@ func complete_sale() -> void:
 		message.text = "Sin existencias: el cliente se marcha sin pagar."
 		return
 	soundscape.play("register")
-	for product in products: zone_stock[product_zone(product)] -= 1
+	for product in products: take_product(product)
 	var total := count*progression.sale_price()
 	money += total
 	revenue += total
@@ -485,8 +513,8 @@ func finish() -> void:
 	joystick.reset()
 	night += 1
 	cafe_used = false
-	var saved := SaveStore.write_game(money,night,progression.owned,stock,"city",zone_stock)
-	show_panel("TURNO CERRADO · 06:00\n%d ventas · Ingresos $%d · Reposición $%d\nPérdidas en mercancía $%d · Saldo $%d\n%s\nLa ciudad despierta. Puedes salir." % [sold,revenue,expenses,events.losses,money,"Progreso guardado" if saved else "Error de guardado"],"Salir a la ciudad",enter_city)
+	var saved := SaveStore.write_game(money,night,progression.owned,stock,"city",zone_stock,product_counts)
+	show_panel("TURNO CERRADO · 06:00\n%d ventas · Ingresos $%d · Reposición $%d\nPérdidas en mercancía $%d · Saldo $%d\n%s\nLa ciudad despierta. Puedes salir." % [sold,revenue,expenses,events.losses,money,"Progreso guardado" if saved else "Error de guardado"],"Comprar mercancía",exploration.purchase_stock)
 
 func _input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:
@@ -494,6 +522,7 @@ func _input(event: InputEvent) -> void:
 		if event.keycode==KEY_P: security.call_police()
 		if event.keycode==KEY_H: security.hide_player()
 		if event.keycode==KEY_M: open_map()
+		if event.keycode==KEY_V: events.inspect_fridge()
 	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_R: events.restock()
 	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_E: interact()
 	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_ESCAPE:
@@ -519,7 +548,7 @@ func add_audio_slider(title: String, music: bool) -> void:
 	var label := Label.new()
 	label.text = title+" · %d %%" % int((events.music_volume if music else events.effects_volume)*100)
 	label.custom_minimum_size.x = 150
-	UIStyles.apply_label(label,UIStyles.FONT_BODY
+	UIStyles.apply_label(label,UIStyles.FONT_BODY)
 	row.add_child(label)
 	var slider := HSlider.new()
 	slider.max_value = 200
@@ -543,6 +572,13 @@ func resume_shift() -> void:
 	active = true
 
 func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_GO_BACK_REQUEST and is_instance_valid(controls):
+		if menus.commands_open: menus.back()
+		elif is_instance_valid(security_panel): close_security_menu()
+		elif paused: resume_shift()
+		elif transaction_open: cancel_checkout()
+		elif active: pause_shift()
+		elif is_instance_valid(panel) and hud.visible and panel.get_meta("back_closes",false): close_city_panel()
 	if what == NOTIFICATION_APPLICATION_FOCUS_OUT and is_instance_valid(joystick):
 		joystick.reset()
 		pause_shift()
@@ -622,10 +658,13 @@ func update_hint() -> void:
 		var local_pos := District.local_point(location,player.position)
 		hint.text = "E · Salir a la calle" if local_pos.y>285 else ("E · Hablar en el mostrador" if local_pos.y<185 else "Acércate al mostrador o explora el local")
 	else:
+		if events.nearby_damage()>=0:
+			hint.text = "E · Reparar desperfectos" if events.apparition<=0 else "Hay daños · Espera a que se vaya"
+			return
 		if security.hiding:
 			hint.text = "H · Salir del mostrador"
 			return
-		hint.text = "E · Abrir / cerrar nevera · R reponer" if player.position.y<116 else ("E · Atender en caja" if player.position.distance_to(CASHIER)<28 else ("E · Examinar productos y precios" if events.shelf_near(player.position)>=0 else "Explora los pasillos"))
+		hint.text = "E · Abrir / cerrar · V · Revisar nevera · R · Reponer" if player.position.y<116 else ("E · Atender en caja" if player.position.distance_to(CASHIER)<28 else ("E · Examinar productos y precios" if events.shelf_near(player.position)>=0 else "Explora los pasillos"))
 
 func nearby_shop() -> String:
 	for place in (["atelier"] if street==1 else ["store","hardware","cafe"]):
@@ -672,7 +711,7 @@ func purchase_upgrade(id: String) -> void:
 	var result := progression.buy(id,money)
 	if result.ok:
 		money = result.balance
-		if not SaveStore.write_game(money,night,progression.owned,stock,"city",zone_stock):
+		if not SaveStore.write_game(money,night,progression.owned,stock,"city",zone_stock,product_counts):
 			message.text = "Mejora aplicada, pero no se pudo guardar."
 		else:
 			message.text = result.message
@@ -730,7 +769,7 @@ func buy_cafe(index: int) -> void:
 	cafe_menu_open = false
 	money -= price
 	cafe_used = true
-	var saved := SaveStore.write_game(money,night,progression.owned,stock,"city",zone_stock)
+	var saved := SaveStore.write_game(money,night,progression.owned,stock,"city",zone_stock,product_counts)
 	if is_instance_valid(panel): panel.hide()
 	show_panel("CAFÉ DEL FARO · PEDIDO SERVIDO\n%s · $%d\nSaldo restante: $%d\n%s" % [names[index],price,money,"Gracias por tu visita." if saved else "No se pudo guardar el pedido."],"Volver al local",close_city_panel)
 
@@ -753,20 +792,53 @@ func toggle_audio() -> void:
 func product_zone(product: String) -> int:
 	for i in range(3):
 		if product in exploration.PRODUCTS[i]: return i
-	return ["Agua Bruma","Jugo Aurora","Leche Alba","Yogur Nieve","Queso Fresco"].find(product)+3
+	return ["Agua · 500 ml","Jugo de naranja · 1 L","Leche · 1 L","Yogur · 200 g","Queso · 250 g"].find(product)+3
 
 func checkout_items() -> Array[String]:
 	return available_items(checkout_person)
 
 func available_items(person: Dictionary) -> Array[String]:
-	var available := zone_stock.duplicate()
+	sync_products()
+	var available := product_counts.duplicate()
 	var result: Array[String] = []
 	for product in person.get("items",[]):
-		var zone := product_zone(product)
-		if zone>=0 and zone<8 and available[zone]>0:
+		if int(available.get(product,0))>0:
 			result.append(product)
-			available[zone] -= 1
+			available[product] -= 1
 	return result
+
+func zone_products(zone: int) -> Array:
+	if zone<3: return exploration.PRODUCTS[zone]
+	return [["Agua · 500 ml"],["Jugo de naranja · 1 L"],["Leche · 1 L"],["Yogur · 200 g"],["Queso · 250 g"]][zone-3]
+
+func sync_products() -> void:
+	for zone in range(8):
+		var names := zone_products(zone)
+		var total := 0
+		for product in names: total += int(product_counts.get(product,0))
+		while total<zone_stock[zone]:
+			var chosen: String = names[0]
+			for product in names:
+				if int(product_counts.get(product,0))<int(product_counts.get(chosen,0)): chosen = product
+			product_counts[chosen] = int(product_counts.get(chosen,0))+1
+			total += 1
+		while total>zone_stock[zone]:
+			for product in names:
+				if int(product_counts.get(product,0))>0:
+					product_counts[product] -= 1
+					total -= 1
+					break
+
+func product_quantity(product: String) -> int:
+	sync_products()
+	return int(product_counts.get(product,0))
+
+func take_product(product: String) -> void:
+	sync_products()
+	if int(product_counts.get(product,0))<=0: return
+	product_counts[product] -= 1
+	zone_stock[product_zone(product)] -= 1
+
 
 func update_street_geometry() -> void:
 	background.texture = load(District.street_texture(street))
@@ -805,6 +877,7 @@ func shelf_stock() -> int:
 func _process(_delta: float) -> void:
 	if is_instance_valid(security_panel) and (not active or location!="store"): close_security_menu()
 	if active: return
+	interaction_finger = -1
 	if is_instance_valid(actor): actor.pause()
 	for person in crowd.people: person.sprite.pause()
 	if is_instance_valid(security):
@@ -813,10 +886,22 @@ func _process(_delta: float) -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if not active or not touch_controls: return
-	if event is InputEventScreenTouch and event.pressed:
-		if joystick.get_global_rect().has_point(event.position): return
-		if (get_canvas_transform().affine_inverse()*event.position).distance_to(player.position)<=55:
-			interact()
+	if event is InputEventScreenTouch:
+		if event.pressed:
+			if joystick.get_global_rect().has_point(event.position): return
+			if (get_canvas_transform().affine_inverse()*event.position).distance_to(player.position)<=55:
+				interaction_finger = event.index
+				interaction_started = Time.get_ticks_msec()
+				interaction_origin = event.position
+				get_viewport().set_input_as_handled()
+		elif event.index==interaction_finger:
+			interaction_finger = -1
+			if event.position.distance_to(interaction_origin)>24: return
+			if security.hiding:
+				security.hide_player()
+			elif Time.get_ticks_msec()-interaction_started>=450 and location=="store" and player.position.y<116:
+				events.inspect_fridge()
+			else: interact()
 			get_viewport().set_input_as_handled()
 
 func set_game_controls_visible(value: bool) -> void:

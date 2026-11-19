@@ -2,8 +2,10 @@ config_version=5
 
 [application]
 config/name="Turno de Medianoche"
+config/icon="res://assets/app-icon.svg"
 run/main_scene="res://scenes/main.tscn"
-config/version="0.4.0"
+config/version="0.4.1"
+config/quit_on_go_back=false
 
 [display]
 window/size/viewport_width=640
@@ -11,9 +13,11 @@ window/size/viewport_height=408
 window/size/window_width_override=1280
 window/size/window_height_override=816
 window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
 window/handheld/orientation=0
 
 [rendering]
+textures/vram_compression/import_etc2_astc=true
 renderer/rendering_method="gl_compatibility"
 textures/default_filters/use_nearest_mipmap_filter=false
 textures/canvas_textures/default_texture_filter=0

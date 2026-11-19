@@ -4,10 +4,32 @@ var game: Node2D
 var door_amount := 0.0
 var door_index := 0
 var amounts := [0.0,0.0,0.0,0.0,0.0]
+var door_sprites: Array[Sprite2D] = []
+
+func _ready() -> void:
+	# Door leaves stay above the background (-10), below every walking actor (0).
+	z_index = -2
+	for i in range(5):
+		# Two coplanar glass leaves. The right leaf slides behind the left leaf.
+		for leaf in range(2):
+			var sprite := Sprite2D.new()
+			var atlas := AtlasTexture.new()
+			atlas.atlas = preload("res://assets/fridge-doors.png")
+			atlas.region = Rect2(leaf*52,10,52,34)
+			atlas.filter_clip = true
+			sprite.texture = atlas
+			sprite.centered = false
+			sprite.position = Vector2(46+i*112+leaf*52,54)
+			var glass := ShaderMaterial.new()
+			glass.shader = preload("res://scripts/fridge_glass.gdshader")
+			glass.set_shader_parameter("leaf_origin",Vector2(leaf*52,10))
+			sprite.material = glass
+			sprite.z_index = 1 if leaf==0 else 0
+			add_child(sprite)
+			door_sprites.append(sprite)
 
 func _process(delta: float) -> void:
 	if game == null: return
-	z_index = 1
 	visible = game.location == "store"
 	if not visible: return
 	if game.events.door >= 0: door_index = game.events.door
@@ -16,6 +38,8 @@ func _process(delta: float) -> void:
 		door_amount = move_toward(door_amount,1.0 if game.events.door>=0 or game.events.haunt_door>=0 else 0.0,delta*3)
 	for i in range(5):
 		if game.active: amounts[i] = move_toward(amounts[i],1.0 if game.events.open_doors[i] else 0.0,delta*2.4)
+		var slide: float = smoothstep(0.0,1.0,amounts[i])*49.0
+		door_sprites[i*2+1].position.x = 46+i*112+52-slide
 	queue_redraw()
 
 func _draw() -> void:
@@ -25,11 +49,6 @@ func _draw() -> void:
 		var x := 46.0+i*112.0
 		if game.events.spoiled[i]:
 			draw_rect(Rect2(x,56,101,27),Color(0.03,0.09,0.12,0.94))
-		if amounts[i]>0:
-			var edge: float = x+38+amounts[i]*35
-			draw_rect(Rect2(edge,55,30,29),Color(0.35,0.65,0.72,0.16))
-			draw_rect(Rect2(edge,55,30,29),Color("a7d8dc"),false,1)
-			draw_line(Vector2(edge+24,65),Vector2(edge+24,75),Color("daeff0"),2)
 	if game.progression.owned.has("storage"):
 		draw_rect(Rect2(550,99,50,16),Color("594631"))
 		draw_string(ThemeDB.fallback_font,Vector2(553,110),"ALMACÉN",HORIZONTAL_ALIGNMENT_LEFT,-1,9,Color("f1d4a0"))

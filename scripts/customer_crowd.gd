@@ -1,6 +1,7 @@
 extends RefCounted
 
 const Motion = preload("res://scripts/character_motion.gd")
+const CUSTOMER_ASSETS = ["customer-doctor","customer-pilot","customer-mechanic","customer-woman","customer-senior","customer-courier","customer-doctor","customer-pilot","customer-mechanic","customer-chef","customer-firefighter","customer-builder"]
 
 var game
 var people: Array[Dictionary] = []
@@ -47,7 +48,7 @@ func reset() -> void:
 
 func spawn() -> void:
 	if look_bag.is_empty():
-		look_bag.assign([0,1,2,3,4,5,6])
+		look_bag.assign(range(CUSTOMER_ASSETS.size()))
 	var appearance_index := rng.randi_range(0,look_bag.size()-1)
 	if look_bag.size()>1 and look_bag[appearance_index]==last_look: appearance_index = (appearance_index+1)%look_bag.size()
 	var look := look_bag[appearance_index]
@@ -55,13 +56,12 @@ func spawn() -> void:
 	last_look = look
 	var body := Node2D.new()
 	body.position = Vector2(320,344)
-	var asset: String = "employee-modern" if look<4 else ["customer-woman","customer-senior","customer-courier"][look-4]
-	var sprite: AnimatedSprite2D = game.make_actor(asset)
-	if look<4:
+	var sprite: AnimatedSprite2D = game.make_actor(CUSTOMER_ASSETS[look])
+	if look>=6 and look<=8:
 		var palette := ShaderMaterial.new()
 		palette.shader = preload("res://scripts/customer_palette.gdshader")
-		palette.set_shader_parameter("jacket",[Color("a85542"),Color("b69948"),Color("786397"),Color("507297")][look])
-		palette.set_shader_parameter("hair",[Color("45352e"),Color("9c8058"),Color("77717a"),Color("292c3c")][look])
+		palette.set_shader_parameter("jacket",[Color("638796"),Color("4b526e"),Color("997c49")][look-6])
+		palette.set_shader_parameter("hair",[Color("45352e"),Color("9c8058"),Color("77717a")][look-6])
 		sprite.material = palette
 	body.add_child(sprite)
 	var bubble := Label.new()
@@ -94,6 +94,17 @@ func spawn() -> void:
 
 func plan(p: Dictionary, target: Vector2) -> void:
 	p.bubble.text = ""
+	p.fridge_zone = -1
+	var zone := SPOTS.find(target)
+	if p.get("state","")=="shopping" and zone>=3:
+		var occupied := [0,0]
+		for other in people:
+			if other!=p and other.state=="shopping" and other.get("fridge_zone",-1)==zone:
+				occupied[int(other.get("fridge_side",0))] += 1
+		var side := rng.randi_range(0,1) if occupied[0]==occupied[1] else (0 if occupied[0]<occupied[1] else 1)
+		p.fridge_zone = zone
+		p.fridge_side = side
+		target += Vector2(-24 if side==0 else 24,0)
 	var start := Vector2i((p.node.position/8).round())
 	var end := Vector2i((target/8).round())
 	p.path = nav.get_point_path(start,end)
@@ -149,7 +160,7 @@ func tick(delta: float) -> void:
 		if p.state=="queue" and not p.thief:
 			var stocked := false
 			for product in p.items:
-				if game.zone_stock[game.product_zone(product)]>0: stocked = true
+				if game.product_quantity(product)>0: stocked = true
 			if not stocked: leave(p)
 		if p.state=="fleeing" and p.path.is_empty(): plan(p,SPOTS[rng.randi_range(0,7)])
 		if not p.path.is_empty():
@@ -184,16 +195,20 @@ func tick(delta: float) -> void:
 			if p.wait>=2.5+(p.id%3):
 				var visited: Vector2 = p.targets.pop_front()
 				visits_log.append(visited)
-				var product_names := ["Papas Crujín", "Fideos Nube", "Jabón Claro", "Agua Bruma", "Jugo Aurora", "Leche Alba", "Yogur Nieve", "Queso Fresco"]
+				var product_names := ["Papas Crujín", "Fideos Nube", "Jabón Claro", "Agua · 500 ml", "Jugo de naranja · 1 L", "Leche · 1 L", "Yogur · 200 g", "Queso · 250 g"]
 				var spot_index := SPOTS.find(visited)
 				var product_zone: int = spot_index
-				if product_zone<0 or product_zone>=game.zone_stock.size() or game.zone_stock[product_zone]<=0:
+				if product_zone<0 or product_zone>=game.zone_stock.size() or game.zone_stock[product_zone]<=0 or game.events.damaged[product_zone]:
 					p.bubble.text = "Agotado · se va"
 					leave(p)
 					continue
-				if spot_index<3:
-					p.items.append(game.exploration.PRODUCTS[spot_index][rng.randi_range(0,2)])
-				else: p.items.append(product_names[spot_index])
+				var choices: Array = []
+				for name in game.zone_products(spot_index):
+					if game.product_quantity(name)>0: choices.append(name)
+				if choices.is_empty():
+					leave(p)
+					continue
+				p.items.append(choices[rng.randi_range(0,choices.size()-1)])
 				p.basket += 1
 				p.wait = 0
 				if p.thief:
@@ -230,6 +245,15 @@ func tick(delta: float) -> void:
 				game.events.losses += lost*4
 			people.erase(p)
 			p.node.queue_free()
+	update_fridge_doors()
+
+func update_fridge_doors() -> void:
+	var users := {}
+	for p in people:
+		if p.state!="shopping" or not p.path.is_empty() or p.targets.is_empty() or p.wait<=0: continue
+		var zone := SPOTS.find(p.targets[0])
+		if zone>=3: users[zone-3] = true
+	game.events.sync_customer_fridges(users)
 
 func first() -> Dictionary:
 	for person in queue:

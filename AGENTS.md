@@ -2,9 +2,17 @@
 
 Aplican a todo este repositorio. Mantener este archivo actualizado con las decisiones explícitas del usuario; no convertir propuestas del agente en preferencias aprobadas.
 
+## Productos y marcas
+- Conservar la vista frontal del mueble al examinar estantes y neveras. Productos definidos dentro del estante y precio debajo de cada espacio; sin fichas separadas ni bloques superpuestos sobre el escenario. Si un producto se agota, sólo su hueco queda vacío en la vista ampliada.
+- Preferir etiquetas genéricas sin marca, con tipo de producto y contenido: Agua 500 ml, Jugo de naranja 1 L, Leche 1 L, Yogur 200 g y Queso 250 g.
+- Usar marcas ficticias y diseños originales en todos los productos. No copiar nombres, logotipos, mascotas ni envases reconocibles de marcas reales.
+- Al examinar productos, usar ilustraciones dedicadas de suficiente resolución, con nombres y precios legibles; no ampliar pequeños recortes de los estantes del escenario.
+
 ## Dirección visual aprobada
+- Al preparar imágenes de elementos interactivos, preparar siempre una secuencia de estados para mayor realismo (por ejemplo, cerrado, entreabierto y abierto), conservando encuadre, escala, perspectiva, materiales e iluminación. Integrar y comprobar la secuencia en Godot.
 - Continuar la versión 2D en Godot. El proyecto 3D es independiente.
 - Pixel art moderno, detallado y coherente. Usar al protagonista como base de proporciones para clientes, ladrones y policías; permitir atuendos, sexo y cabello variados.
+- Los clientes usan apariencias propias; no reutilizar el skin del protagonista. Incluir profesiones como doctor, piloto y mecánica.
 - Movimiento natural con frente, espalda y ambos perfiles; animar piernas y brazos según desplazamiento real. Monstruos y perros también deben moverse, no deslizarse como imágenes.
 - Cada calle debe verse completa en una sola toma. No introducir panoramas con cámara que persigue al personaje para resolver la escala.
 - Diseñar el exterior del supermercado a partir de su interior: materiales, colores, luz, tamaño aparente y puertas coherentes.
@@ -18,6 +26,7 @@ Aplican a todo este repositorio. Mantener este archivo actualizado con las decis
 - Centrar todos los menús según su tamaño y el viewport, incluso si se redimensiona.
 - Una sola interfaz coherente. El usuario aprobó el estilo Nocturno con controles compactos e iconos.
 - No volver a añadir un selector de tres diseños ni un botón permanente de interactuar. Mantener Comandos en el menú.
+- En PC, mantener Comandos y los atajos de teclado para pruebas. En móviles, mostrar Controles táctiles y acciones contextuales sin letras de teclas; adaptar HUD, menús y mando al tamaño y área segura de la pantalla, sin deformar el escenario ni ocultar la patrulla.
 - Los avisos inferiores deben ocupar su propia franja fuera del escenario. Nunca tapar la patrulla, ruedas, entrada o personajes con la interfaz.
 - Seguridad abre sin pausar el juego; pausa sí lo detiene. Métodos de pago elegidos por el cliente.
 - El probador mantiene al mismo cuerpo y sus animaciones; incluir selector hombre/mujer y seis conjuntos de peinado/ropa.
@@ -26,11 +35,17 @@ Aplican a todo este repositorio. Mantener este archivo actualizado con las decis
 
 ## Mecánicas que no deben retroceder
 - Stock separado por estantes y neveras, productos adecuados a su zona; sin mercancía no hay venta.
+- Las puertas de nevera son correderas: se desplazan horizontalmente sobre su guía, sin girar ni salir hacia el pasillo.
+- Al limpiar las líneas de puertas pintadas en las neveras, limitar la edición al interior de esas neveras. Conservar el escenario aprobado, incluido el piso; no reemplazarlo con la imagen completa generada.
 - Neveras independientes; la mercancía sólo se daña tras tres horas de puerta abierta. Cerrar reinicia el contador.
+- Los clientes abren la nevera mientras examinan sus productos y la cierran al terminar; si varios la usan, cerrar al retirarse el último. Respetar las puertas abiertas por el jugador.
+- Al mirar una nevera, los clientes se colocan a un lado u otro, no en el centro del mueble.
+- Abrir o cerrar una nevera con E no pausa el juego ni abre automáticamente la vista de productos. Examinar su contenido es una acción aparte.
 - Ladrones no pagan, roban entre 1 y 5 unidades, salen de verdad o buscan escapar si la puerta está cerrada. Primera noche: objetivo de 2 a 4, sujeto a acceso y duración.
 - Policía aparece después de que la patrulla se detenga, persigue al ladrón y lo escolta cerca, detenido delante; abre y vuelve a cerrar la puerta. Informar detenciones sólo si ocurrieron.
 - Perros más lentos, conducta variable, patas animadas; pueden correr, robar o ensuciar y el jugador puede atraparlos y sacarlos.
 - Terror en las dos últimas horas; clientes se retiran o huyen. Música cambia por situación; sustos, voces y efectos deben encajar con el tono del juego.
+- Durante las apariciones, abrir puertas de neveras y hacer caer productos de estantes. Al retirarse el monstruo, conservar desperfectos visibles que el jugador deba reparar.
 
 ## Forma de trabajar
 - Hablar en español, implementar y verificar, con actualizaciones breves. Avanzar proactivamente dentro del pedido.

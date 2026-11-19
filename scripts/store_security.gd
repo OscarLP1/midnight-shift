@@ -48,6 +48,10 @@ func _process(delta: float) -> void:
 		entrance_view.game = game
 		entrance_view.z_index = 2
 		add_child(entrance_view)
+		var frame := preload("res://scripts/counter_hide_frame.gd").new()
+		frame.game = game
+		frame.z_index = 4
+		add_child(frame)
 	if not is_instance_valid(hiding_actor):
 		hiding_actor = game.make_actor("employee-hide")
 		hiding_actor.z_index = 3
@@ -64,6 +68,7 @@ func _process(delta: float) -> void:
 	game.actor.visible = hide_amount<=0.001
 	game.actor.modulate.a = 1
 	if hide_amount>0:
+		hide_material.set_shader_parameter("depth",hide_amount)
 		hide_material.set_shader_parameter("jacket",game.wardrobe.COLORS[game.wardrobe.saved[2]])
 		hide_material.set_shader_parameter("hair",game.wardrobe.HAIR_COLORS[game.wardrobe.saved[3]])
 		hiding_actor.animation = str(hide_direction)

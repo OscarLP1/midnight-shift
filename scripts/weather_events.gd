@@ -6,9 +6,16 @@ var rain_amount := 0.0
 var snow_amount := 0.0
 var door := -1
 var open_doors := [false,false,false,false,false]
+var customer_fridges: Dictionary = {}
+var customer_opened := [false,false,false,false,false]
 var open_time := [0.0,0.0,0.0,0.0,0.0]
 var spoiled := [false,false,false,false,false]
 var losses := 0
+var damaged := [false,false,false,false,false,false,false,false]
+var fallen: Array[Dictionary] = []
+var disturbance_in := 0.0
+var repairing := -1
+var repair_progress := 0.0
 var apparition := 0.0
 var next_apparition := 0.0
 var phase := 0.0
@@ -102,6 +109,11 @@ func reset_shift() -> void:
 	weather = (game.night - 1) % 3
 	door = -1
 	open_doors.fill(false)
+	for i in range(5):
+		if damaged[i+3]: open_doors[i] = true
+	repairing = -1
+	customer_fridges.clear()
+	customer_opened.fill(false)
 	open_time.fill(0.0)
 	spoiled.fill(false)
 	losses = 0
@@ -117,6 +129,15 @@ func reset_shift() -> void:
 	for creature in creatures: creature.visible = false
 
 func tick(delta: float) -> void:
+	for item in fallen: item.age += delta
+	if repairing>=0:
+		if apparition>0 or game.location!="store" or nearby_damage()!=repairing or game.security.hiding:
+			repairing = -1
+			repair_progress = 0.0
+		else:
+			repair_progress += delta
+			game.message.text = "Reparando… %d%% · Permanece cerca" % mini(100,int(repair_progress/3.0*100))
+			if repair_progress>=3.0: finish_repair()
 	for i in range(5):
 		if open_doors[i]:
 			open_time[i] += delta
@@ -137,6 +158,7 @@ func tick(delta: float) -> void:
 		monster_index = (game.night-1+event_count)%3
 		haunt_door = -1
 		event_count += 1
+		disturbance_in = 0.0
 		next_apparition = game.elapsed+game.seconds_per_game_hour()*0.5
 		game.message.text = "Hay alguien en el pasillo. No parece un cliente." if event_count%2==1 else "Las luces cambian… algo está aquí."
 		vocal_count = 0
@@ -144,6 +166,10 @@ func tick(delta: float) -> void:
 		vocal_hold = 0
 
 	if apparition>0:
+		disturbance_in -= delta
+		if disturbance_in<=0:
+			cause_disturbance()
+			disturbance_in = 2.8
 		apparition_age += delta
 		var before: Vector2 = monster_position
 		vocal_in -= delta
@@ -155,9 +181,6 @@ func tick(delta: float) -> void:
 			vocal_in = [5.5,6.5,5.0][monster_index]
 			vocal_hold = 0.7 if monster_index!=2 else 1.0
 		monster_repath -= delta
-		if monster_index==1:
-			haunt_door = int(apparition_age/3)%5
-			open_doors[haunt_door] = true
 		if monster_position.y<280:
 			if monster_repath<=0:
 				var target: Vector2 = game.player.position if monster_index==0 and not game.security.hiding else game.crowd.SPOTS[(event_count+int(apparition_age/3))%8]
@@ -171,7 +194,10 @@ func tick(delta: float) -> void:
 				game.message.text = "¡Está detrás de ti! Corre o escóndete."
 		game.Motion.animate(creatures[monster_index],monster_position-before,62 if monster_index==0 else 38)
 		creatures[monster_index].position = monster_position
+	var was_present := apparition>0
 	apparition = maxf(0,apparition-delta)
+	if was_present and apparition<=0 and damaged.has(true):
+		game.message.text = "Se ha ido. Hay daños en la tienda: acércate y pulsa E para reparar."
 	if apparition<=0:
 		haunt_door = -1
 		voice.stop()
@@ -179,19 +205,53 @@ func tick(delta: float) -> void:
 	queue_redraw()
 
 func interact() -> bool:
+	var broken := nearby_damage()
+	if broken>=0:
+		if apparition>0:
+			game.message.text = "Espera a que se vaya antes de reparar."
+		else:
+			repairing = broken
+			repair_progress = 0.0
+			game.message.text = "Reparando… permanece cerca durante 3 segundos."
+		return true
 	if game.player.position.y<116:
 		var selected := clampi(int((game.player.position.x-40)/112),0,4)
 		open_doors[selected] = not open_doors[selected]
+		customer_opened[selected] = false
 		if not open_doors[selected]: open_time[selected] = 0.0
 		game.soundscape.play("door-soft")
 		door = selected if open_doors[selected] else -1
-		game.message.text = "Nevera abierta · R para reponer" if door>=0 else "Nevera cerrada."
+		game.message.text = "V · Revisar productos · E · Cerrar · R · Reponer" if door>=0 else "Nevera cerrada."
 		return true
 	var shelf := shelf_near(game.player.position)
 	if shelf>=0:
 		game.exploration.shelf(shelf)
 		return true
 	return false
+
+func sync_customer_fridges(users: Dictionary) -> void:
+	for index in range(5):
+		var occupied: bool = users.has(index)
+		if occupied and not customer_fridges.has(index):
+			customer_opened[index] = not open_doors[index]
+			if not open_doors[index]:
+				open_doors[index] = true
+				game.soundscape.play("door-soft")
+		elif not occupied and customer_fridges.has(index):
+			if customer_opened[index] and not damaged[index+3]:
+				open_doors[index] = false
+				open_time[index] = 0.0
+				game.soundscape.play("door-soft")
+			customer_opened[index] = false
+	customer_fridges = users.duplicate()
+
+func inspect_fridge() -> void:
+	if not game.active or game.location!="store" or game.player.position.y>=116: return
+	var selected := clampi(int((game.player.position.x-40)/112),0,4)
+	if not open_doors[selected]:
+		game.message.text = "E · Abre la nevera antes de revisar sus productos."
+		return
+	game.exploration.fridge(selected)
 
 func shelf_near(pos: Vector2) -> int:
 	for i in range(3):
@@ -201,6 +261,9 @@ func shelf_near(pos: Vector2) -> int:
 
 func restock() -> void:
 	if not game.active or game.location!="store": return
+	if nearby_damage()>=0:
+		game.message.text = "E · Repara primero el mueble dañado."
+		return
 	var zone := shelf_near(game.player.position)
 	if game.player.position.y<116: zone = clampi(int((game.player.position.x-40)/112),0,4)+3
 	if zone<0: return
@@ -229,6 +292,7 @@ func _draw() -> void:
 	if not is_instance_valid(game): return
 	draw_weather()
 	if game.location!="store": return
+	draw_fallen_products()
 	if apparition>0:
 		var opacity := minf(clampf((APPEARANCE_SECONDS-apparition)/1.2,0,1),clampf(apparition/2.0,0,1))
 		draw_rect(Rect2(32,92,576,188),Color(0.025,0.04,0.09,(0.65 if sin(phase*19)>0.7 else 0.18)*opacity))
@@ -288,3 +352,50 @@ func draw_weather() -> void:
 	if game.location=="store" and snow_amount>0:
 		for rect in [Rect2(24,306,250,2),Rect2(366,306,250,2),Rect2(20,35,2,271),Rect2(618,35,2,271)]:
 			draw_rect(rect,Color(0.78,0.87,0.94,snow_amount*0.85))
+
+func nearby_damage() -> int:
+	if game.location!="store": return -1
+	var zone := shelf_near(game.player.position)
+	if game.player.position.y<116: zone = clampi(int((game.player.position.x-40)/112),0,4)+3
+	return zone if zone>=0 and damaged[zone] else -1
+
+func cause_disturbance() -> void:
+	haunt_door = (event_count+int(apparition_age/2.8))%5
+	open_doors[haunt_door] = true
+	customer_opened[haunt_door] = false
+	damaged[haunt_door+3] = true
+	game.soundscape.play("door-soft")
+	var zone := (event_count+int(apparition_age/2.8))%3
+	if not damaged[zone]:
+		damaged[zone] = true
+		for item in range(3):
+			fallen.append({"zone":zone,"item":item,"age":0.0})
+	game.message.text = "¡Las neveras se abren y los productos caen!"
+
+func finish_repair() -> void:
+	var zone := repairing
+	damaged[zone] = false
+	if zone>=3:
+		open_doors[zone-3] = false
+		open_time[zone-3] = 0.0
+	else:
+		for item in fallen.duplicate():
+			if item.zone==zone: fallen.erase(item)
+	repairing = -1
+	repair_progress = 0.0
+	game.soundscape.play("door-soft")
+	game.message.text = "Nevera reparada y cerrada." if zone>=3 else "Estante reparado y productos recogidos."
+
+func draw_fallen_products() -> void:
+	var catalog: Texture2D = preload("res://assets/product-catalog.png")
+	for item in fallen:
+		var origin: Vector2 = game.crowd.SPOTS[item.zone]+Vector2(-20+item.item*18,-44)
+		var t: float = clampf(item.age/0.75,0.0,1.0)
+		var pos := origin+Vector2((item.item-1)*9*t,45*t*t)
+		draw_set_transform(pos,lerpf(0.0,(-0.7 if item.item%2==0 else 0.8),t))
+		draw_texture_rect_region(catalog,Rect2(-6,-9,12,18),Rect2(item.item*catalog.get_width()/3.0,item.zone*catalog.get_height()/3.0,catalog.get_width()/3.0,catalog.get_height()/3.0))
+		draw_set_transform(Vector2.ZERO)
+	for zone in range(3):
+		if damaged[zone]:
+			var p: Vector2 = game.crowd.SPOTS[zone]
+			draw_line(p+Vector2(-25,-16),p+Vector2(22,-10),Color("845333"),2)

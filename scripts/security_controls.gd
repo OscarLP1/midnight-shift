@@ -43,6 +43,7 @@ func action(parent: Node, title: String, callback: Callable) -> Button:
 	return button
 
 func _process(_delta: float) -> void:
+	super._process(_delta)
 	refresh()
 
 func refresh() -> void:

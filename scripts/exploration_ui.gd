@@ -9,47 +9,93 @@ func setup(owner_game) -> void:
 
 func shelf(index: int) -> void:
 	var ui = game.commerce
-	var page: Control = ui.window("ESTANTE · " + ZONES[index].to_upper(),"VISTA FRONTAL  /  EXAMINA LOS ENVASES Y SUS PRECIOS")
-	var picture := TextureRect.new()
-	var texture := AtlasTexture.new()
-	texture.atlas = load("res://assets/store-prop-%d.png" % index)
-	texture.region = Rect2(2,8,68,48)
-	picture.texture = texture
-	picture.position = Vector2(20,85)
-	picture.size = Vector2(320,190)
-	picture.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	picture.stretch_mode = TextureRect.STRETCH_SCALE
-	picture.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	page.add_child(picture)
-	ui.label(page,"PRECIO POR UNIDAD",Vector2(365,83),11,ui.MUTED)
-	for i in range(3):
-		var y := 111+i*49
-		ui.label(page,PRODUCTS[index][i],Vector2(366,y),14)
-		ui.label(page,"$%d" % game.progression.sale_price(),Vector2(366,y+19),17,ui.ACCENT)
-	ui.label(page,"Existencias de este estante: %d unidades" % game.zone_stock[index],Vector2(23,282),12,ui.MUTED)
-	ui.button(page,"Volver al pasillo",Rect2(365,279,215,34),game.close_city_panel,true)
+	var page: Control = ui.window("ESTANTE · "+ZONES[index].to_upper(),"VISTA FRONTAL / PRODUCTOS Y PRECIOS")
+	var view := preload("res://scripts/product_shelf_view.gd").new()
+	view.game = game
+	view.zone = index
+	view.position = Vector2(20,80)
+	view.size = Vector2(566,188)
+	page.add_child(view)
+	ui.button(page,"Volver al pasillo",Rect2(396,279,190,34),game.close_city_panel,true)
 
 func city_map() -> void:
 	if game.location != "city": return
 	var ui = game.commerce
-	var page: Control = ui.window("MAPA DEL BARRIO", "DOS CALLES / NEGOCIOS DEL BARRIO")
-	ui.label(page,"OESTE · CALLE MODISTAS",Vector2(22,76),11,ui.MUTED)
-	ui.label(page,"ESTE · AVENIDA DEL FARO",Vector2(22,179),11,ui.MUTED)
-	var scale := 564.0/640.0
-	for data in [[20,85,"Viviendas",-1],[110,100,"Lavandería",-1],[230,190,"Atelier",3],[440,180,"Muebles",-1]]:
-		var place_button: Button = ui.button(page,data[2]+("\nPróximamente" if data[3]<0 else ""),Rect2(22+data[0]*scale,98,data[1]*scale,34),map_place.bind(data[3]),data[3]>=0,data[3]<0)
-		place_button.clip_text = true
-		place_button.size = Vector2(data[1]*scale,34)
-	for data in [[20,370,"Supermercado",0],[400,100,"Ferretería",1],[510,110,"Café",2]]:
-		ui.button(page,data[2],Rect2(22+data[0]*scale,201,data[1]*scale,34),map_place.bind(data[3]),true)
-	for y in [142,245]: ui.line(page,Vector2(22,y),Vector2(564,12),Color("354a59"))
-	ui.label(page,"Salida este → avenida     /     ← Salida oeste a Modistas",Vector2(22,159),11,ui.MUTED)
-	var dot := Vector2(22+game.player.position.x*scale,140 if game.street==1 else 243)
-	ui.label(page,"●",dot,12,ui.ACCENT)
-	ui.label(page,"Tú · "+("Calle Modistas" if game.street==1 else "Avenida del Faro"),Vector2(22,280),12,ui.ACCENT)
+	var page: Control = ui.window("MAPA DEL BARRIO", "UBICACIÓN ACTUAL / EL FARO")
+	var map := preload("res://scripts/live_district_map.gd").new()
+	map.game = game
+	map.position = Vector2(20,76)
+	map.size = Vector2(566,194)
+	page.add_child(map)
+	ui.label(page,"● Tú · " + ("Calle Modistas" if game.street==1 else "Avenida del Faro"),Vector2(22,284),12,ui.ACCENT)
 	ui.button(page,"Cerrar mapa",Rect2(420,280,162,33),game.close_city_panel)
 
 func map_place(index: int) -> void:
 	if index<0: return
 	game.close_city_panel()
 	game.message.text = ["Supermercado: edificio más ancho de Avenida del Faro.","Ferretería: entre el supermercado y el café.","Cafetería: extremo este de Avenida del Faro.","Atelier: Calle Modistas, al oeste de Avenida del Faro."][index]
+
+func fridge(index: int) -> void:
+	var ui = game.commerce
+	var page: Control = ui.window("NEVERA", "VISTA FRONTAL / PRODUCTOS REFRIGERADOS")
+	var view := preload("res://scripts/product_shelf_view.gd").new()
+	view.game = game
+	view.zone = index+3
+	view.position = Vector2(20,80)
+	view.size = Vector2(566,188)
+	page.add_child(view)
+	ui.button(page,"Volver al pasillo",Rect2(396,279,190,34),game.close_city_panel,true)
+
+func purchase_stock() -> void:
+	var ui = game.commerce
+	var page: Control = ui.window("PEDIDO DE MERCANCÍA", "ELIGE PRODUCTOS / COSTE POR UNIDAD: $2")
+	game.panel.set_meta("back_closes",false)
+	var scroll := ScrollContainer.new()
+	scroll.position = Vector2(20,76)
+	scroll.size = Vector2(566,188)
+	page.add_child(scroll)
+	var rows := VBoxContainer.new()
+	rows.custom_minimum_size.x = 546
+	rows.add_theme_constant_override("separation",8)
+	scroll.add_child(rows)
+	var quantities := {}
+	for zone in range(8):
+		var heading := Label.new()
+		heading.text = ("ESTANTES · "+ZONES[zone]) if zone<3 else "NEVERA · "+str(zone-2)
+		game.UIStyles.apply_label(heading,12)
+		rows.add_child(heading)
+		for product in game.zone_products(zone):
+			var row := HBoxContainer.new()
+			rows.add_child(row)
+			var name_label := Label.new()
+			name_label.text = "%s · Stock: %d" % [product,game.product_quantity(product)]
+			name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			game.UIStyles.apply_label(name_label,12)
+			row.add_child(name_label)
+			var count := SpinBox.new()
+			count.min_value = 0
+			count.max_value = maxi(0,game.progression.capacity()-game.stock)
+			count.step = 1
+			count.custom_minimum_size.x = 100
+			row.add_child(count)
+			quantities[product] = count
+	var total_label = ui.label(page,"Total: $0 · Saldo: $%d" % game.money,Vector2(22,270),12)
+	var buy = ui.button(page,"Comprar y salir",Rect2(398,290,188,28),func():
+		var units := 0
+		for product in quantities: units += int(quantities[product].value)
+		if units*2>game.money or units+game.stock>game.progression.capacity(): return
+		game.sync_products()
+		for product in quantities:
+			var amount := int(quantities[product].value)
+			game.product_counts[product] += amount
+			game.zone_stock[game.product_zone(product)] += amount
+		game.money -= units*2
+		game.expenses += units*2
+		game.SaveStore.write_game(game.money,game.night,game.progression.owned,game.stock,"city",game.zone_stock,game.product_counts)
+		game.enter_city(),true)
+	var refresh := func(_value):
+		var units := 0
+		for product in quantities: units += int(quantities[product].value)
+		total_label.text = "Total: $%d · Saldo: $%d · %d/%d uds." % [units*2,game.money,game.stock+units,game.progression.capacity()]
+		buy.disabled = units*2>game.money or units+game.stock>game.progression.capacity()
+	for product in quantities: quantities[product].value_changed.connect(refresh)

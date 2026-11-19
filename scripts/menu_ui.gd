@@ -25,19 +25,24 @@ func main_menu() -> void:
 	ui.label(page,"BIENVENIDO AL TURNO",Vector2(366,84),11,ui.ACCENT)
 	ui.button(page,"Continuar" if saved else "Sin partida guardada",Rect2(365,108,217,38),game.start.bind(true),saved,not saved)
 	ui.button(page,"Nueva partida",Rect2(365,156,217,38),game.start.bind(false),not saved)
-	ui.button(page,"Comandos",Rect2(365,214,217,38),commands.bind(false))
-	ui.label(page,"Teclado y controles táctiles",Vector2(367,274),11,ui.MUTED)
+	ui.button(page,"Controles" if game.touch_controls else "Comandos",Rect2(365,214,217,38),commands.bind(false))
+	ui.label(page,"Controles táctiles" if game.touch_controls else "Teclado y ratón",Vector2(367,274),11,ui.MUTED)
 	ui.label(page,"Consulta la guía antes de empezar.",Vector2(367,293),10,ui.MUTED)
 
 func commands(from_pause := false) -> void:
 	commands_open = true
 	return_to_pause = from_pause
 	var ui = game.commerce
-	var page: Control = ui.window("COMANDOS","CONTROLES Y ACCIONES  /  PUEDES CONSULTAR ESTA GUÍA DESDE PAUSA")
+	var page: Control = ui.window("CONTROLES TÁCTILES" if game.touch_controls else "COMANDOS","CONTROLES Y ACCIONES  /  PUEDES CONSULTAR ESTA GUÍA DESDE PAUSA")
 	var groups := [
 		[["WASD","Moverse · también flechas"],["Shift","Correr"],["E","Interactuar y atender"],["R","Reponer la zona cercana"],["Esc","Pausar / cerrar Seguridad"]],
-		[["B","Abrir / cerrar la entrada"],["P","Llamar a la policía"],["H","Esconderse / salir"],["M","Mapa del barrio"]]
+		[["B","Abrir / cerrar la entrada"],["P","Llamar a la policía"],["H","Esconderse / salir"],["M","Mapa del barrio"],["V","Revisar nevera abierta"]]
 	]
+	if game.touch_controls:
+		groups = [
+			[["Mando","Desliza para moverte"],["Borde","Lleva el mando al borde: correr"],["Acción","Botón según lo que tengas cerca"],["Toque","Toca cerca de tu personaje"],["Mantén","Revisa una nevera abierta"]],
+			[["Placa","Abre Seguridad sin pausar"],["Seguridad","Policía, entrada y escondite"],["Mapa","Botón del mapa en la ciudad"],["Reponer","Botón junto a estantes y neveras"],["Pausa","Detiene el turno y abre opciones"]]
+		]
 	for column in range(2):
 		var x := 20+column*292
 		for row in range(groups[column].size()):
@@ -45,8 +50,8 @@ func commands(from_pause := false) -> void:
 			ui.line(page,Vector2(x,y),Vector2(78,27),Color("28434a"))
 			ui.label(page,groups[column][row][0],Vector2(x+6,y+5),11,ui.ACCENT)
 			ui.label(page,groups[column][row][1],Vector2(x+86,y+5),11,ui.INK)
-	ui.label(page,"E: examinar productos, cobrar, recuperar mercancía y limpiar, según dónde estés.",Vector2(21,250),11,ui.MUTED)
-	ui.label(page,"Táctil: arrastra el mando y toca cerca de tu personaje para interactuar.",Vector2(21,269),11,ui.MUTED)
+	ui.label(page,"Abrir, cobrar, reparar o limpiar: usa la acción que aparece al acercarte." if game.touch_controls else "E: examinar productos, cobrar, recuperar mercancía y limpiar, según dónde estés.",Vector2(21,250),11,ui.MUTED)
+	ui.label(page,"Para salir del escondite: toca Salir o usa el menú Seguridad." if game.touch_controls else "Consulta aquí los atajos de teclado mientras pruebas en PC.",Vector2(21,269),11,ui.MUTED)
 	ui.button(page,"Volver a Pausa" if from_pause else "Menú principal",Rect2(398,292,184,30),back)
 
 func back() -> void:

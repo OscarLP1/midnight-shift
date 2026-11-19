@@ -30,6 +30,7 @@ func window(title: String, subtitle: String, warm := false) -> Control:
 	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	game.controls.add_child(shade)
 	game.panel = preload("res://scripts/centered_panel.gd").new()
+	game.panel.set_meta("back_closes",true)
 	game.panel.size = Vector2(608,328)
 	game.panel.add_theme_stylebox_override("panel",box(PAPER if warm else Color("12242b")))
 	game.panel.add_theme_constant_override("margin_left",game.UIStyles.SPACE_MD)
@@ -72,6 +73,7 @@ func button(parent: Node, text: String, rect: Rect2, callback: Callable, primary
 	var b := Button.new()
 	b.text = text
 	b.position = rect.position
+	b.clip_text = true
 	b.size = rect.size
 	b.disabled = disabled
 	b.add_theme_stylebox_override("normal",box(Color("84cbb4") if primary else Color("243b41")))
@@ -99,7 +101,7 @@ func checkout() -> void:
 	var grouped := {}
 	var products: Array = game.checkout_items()
 	for i in range(count):
-		var name: String = products[i] if i<products.size() else "Agua Bruma"
+		var name: String = products[i] if i<products.size() else "Agua · 500 ml"
 		grouped[name] = int(grouped.get(name,0))+1
 	var row := 0
 	for name in grouped:
@@ -144,7 +146,7 @@ func upgrades() -> void:
 	var item: Dictionary = game.Progression.CATALOG[selected_upgrade]
 	var owned: bool = game.progression.owned.has(selected_upgrade)
 	var titles := {"storage":"Más espacio\npara mercancía", "register":"Terminal de\nfidelización", "security":"Prevención\nde pérdidas"}
-	label(page,titles[selected_upgrade],Vector2(374,109),21)
+	label(page,titles[selected_upgrade],Vector2(374,109),16)
 	var desc := {"storage":"Capacidad de la tienda\n24 → 40 unidades\nCajas adicionales visibles.","register":"Precio por artículo\n$4 → $5\nNuevo terminal visible.","security":"Probabilidad de hurto\n23% → 10%\nCámaras disuasorias visibles."}
 	label(page,desc[selected_upgrade],Vector2(374,170),12,MUTED)
 	label(page,"Ya instalada" if owned else "Inversión única: $%d" % item.price,Vector2(374,235),12,ACCENT)
@@ -163,8 +165,8 @@ func cafe() -> void:
 	for i in range(menu.size()):
 		var y := 106+i*52
 		label(page,menu[i][0],Vector2(24,y),16,COFFEE)
-		label(page,menu[i][1],Vector2(24,y+22),10,Color("806951"))
-		button(page,"$%d · Pedir" % menu[i][2],Rect2(267,y,93,34),game.buy_cafe.bind(i),false,game.money<int(menu[i][2]))
+		label(page,menu[i][1],Vector2(24,y+22),10,Color("806951"),250)
+		button(page,"$%d · Pedir" % menu[i][2],Rect2(283,y,77,34),game.buy_cafe.bind(i),false,game.money<int(menu[i][2]))
 	line(page,Vector2(378,82),Vector2(1,225),Color("c8b79a"))
 	label(page,"TU DESCANSO",Vector2(397,84),11,Color("806951"))
 	label(page,"Bienvenido\nde vuelta.",Vector2(397,109),24,COFFEE)

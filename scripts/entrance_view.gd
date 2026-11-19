@@ -9,9 +9,14 @@ func _process(delta: float) -> void:
 func _draw() -> void:
 	if game==null: return
 	if game.security.hide_amount>0:
-		draw_rect(Rect2(97,234,32,22),Color("302a27"))
-		draw_rect(Rect2(97,234,32,22),Color("79513a"),false,1)
-		draw_line(Vector2(98,255),Vector2(128,255),Color("c38b52"),1)
+		# Recessed cabinet: back wall, side returns, underside and interior floor.
+		draw_rect(Rect2(96,232,34,25),Color("201b1a"))
+		draw_rect(Rect2(99,236,28,18),Color("302825"))
+		draw_rect(Rect2(99,236,3,18),Color("191919"))
+		draw_rect(Rect2(124,236,3,18),Color("191919"))
+		draw_rect(Rect2(99,251,28,3),Color("514032"))
+		draw_rect(Rect2(99,236,28,3),Color("171718"))
+		draw_line(Vector2(100,254),Vector2(126,254),Color("806044"),1)
 	# Two framed glass leaves slide into the wall pockets along the same track.
 	draw_rect(Rect2(276,269,88,3),Color("455764"))
 	draw_rect(Rect2(277,304,86,3),Color("455764"))

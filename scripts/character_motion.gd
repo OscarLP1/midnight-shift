@@ -3,8 +3,8 @@ extends RefCounted
 # Distance advances the gait, so animation cannot outrun actual movement.
 const PROFILES = {
  "employee-modern": {"walk":"employee-walk-8","run":"employee-run-8","walk_stride":44.0,"run_stride":64.0,"run_threshold":115.0},
- "police-officer": {"run":"police-run-8","walk_stride":42.0,"run_stride":62.0,"run_threshold":105.0},
- "burglar": {"run":"burglar-run-8","walk_stride":42.0,"run_stride":58.0,"run_threshold":88.0}
+ "police-officer": {"run":"police-officer","walk_stride":42.0,"run_stride":62.0,"run_threshold":105.0},
+ "burglar": {"run":"burglar","walk_stride":42.0,"run_stride":58.0,"run_threshold":88.0}
 }
 const PROFILE_KEYS = ["asset","walk_columns","run_columns","rest_frame","walk_stride","run_stride","run_threshold","max_cadence"]
 
