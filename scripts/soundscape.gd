@@ -44,8 +44,9 @@ func _process(delta: float) -> void:
 	siren.volume_db = -12+linear_to_db(maxf(.0001,game.events.effects_volume))
 	for i in range(2):
 		ambience[i].stream_paused = not game.active or game.events.muted
-		var target := -17.0 if game.events.weather==i+1 else -60.0
-		if game.location!="city": target -= 9
+		var strength: float = game.events.rain_amount if i==0 else game.events.snow_amount
+		var target: float = -17.0+linear_to_db(maxf(0.0001,strength))
+		if game.location!="city": target -= 12 if game.security.closed else 7
 		ambience[i].volume_db = move_toward(ambience[i].volume_db,target+linear_to_db(maxf(.0001,game.events.effects_volume)),delta*12)
 	for p in effects: p.stream_paused = game.paused or game.events.muted
 func _exit_tree() -> void:

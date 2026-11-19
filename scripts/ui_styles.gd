@@ -7,7 +7,7 @@ const TITLE = preload("res://assets/fonts/PixelifySans.ttf")
 const NAMES = ["Nocturno", "Pixel ámbar", "Papel"]
 
 static func apply(button: Button, primary := false, preset := -1) -> void:
-	var index := selected if preset<0 else preset
+	var index := 0
 	var fills := [Color("20383f"),Color("282033"),Color("eee1c8")]
 	var accents := [Color("8ed7be"),Color("efc16d"),Color("76583c")]
 	var texts := [Color("e4f2ed"),Color("ffe2a3"),Color("3f342a")]
@@ -35,5 +35,5 @@ static func apply(button: Button, primary := false, preset := -1) -> void:
 	button.add_theme_font_size_override("font_size",11 if button.get_meta("compact_hud",false) else 13)
 
 static func icon(kind: String, preset := -1) -> Texture2D:
-	var index := selected if preset<0 else preset
+	var index := 0
 	return load("res://assets/ui/%s-%d.svg" % [kind,index])

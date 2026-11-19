@@ -18,10 +18,10 @@ func run() -> void:
 	await process_frame
 	assert(game.location == "city" and game.active and not game.customer.visible)
 	assert(game.store_bodies[0].collision_layer == 0 and game.city_bodies[0].collision_layer == 1)
-	game.player.position = Vector2(367,210)
+	game.player.position = Vector2(game.District.DOORS.hardware,258)
 	game.interact()
 	assert(game.location == "hardware")
-	game.player.position = Vector2(320,165)
+	game.player.position = game.District.room_point(game.location,Vector2(320,170))
 	game.interact()
 	await process_frame
 	game.purchase_upgrade("storage")

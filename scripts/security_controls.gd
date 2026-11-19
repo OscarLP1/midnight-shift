@@ -1,4 +1,4 @@
-extends PanelContainer
+extends "res://scripts/centered_panel.gd"
 var game
 var status: Label
 var door: Button
@@ -7,7 +7,6 @@ var hide: Button
 
 func setup(owner_game) -> void:
 	game = owner_game
-	position = Vector2(420,52)
 	custom_minimum_size = Vector2(204,174)
 	game.style_control(self)
 	var column := VBoxContainer.new()

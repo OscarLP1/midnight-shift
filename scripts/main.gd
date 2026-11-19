@@ -7,7 +7,10 @@ const MenuUI = preload("res://scripts/menu_ui.gd")
 var menus := MenuUI.new()
 var map_button: Button
 var security_panel: PanelContainer
+var hud_bands: Control
 var street := 0
+const District = preload("res://scripts/district_layout.gd")
+var world_camera: Camera2D
 var soundscape: Node
 var security: Node2D
 const Wardrobe = preload("res://scripts/wardrobe.gd")
@@ -28,6 +31,7 @@ const StoreDetails = preload("res://scripts/store_details.gd")
 var progression := Progression.new()
 var location := "store"
 var background: Sprite2D
+var dry_night_material: ShaderMaterial
 var foreground_props: Array[Sprite2D] = []
 var store_bodies: Array[StaticBody2D] = []
 var city_bodies: Array[StaticBody2D] = []
@@ -85,12 +89,17 @@ func walkable_store(p: Vector2, visitors := false) -> bool:
 func _ready() -> void:
 	ThemeDB.fallback_font = UIStyles.BODY
 	ThemeDB.fallback_font_size = 13
-	var settings := ConfigFile.new()
-	if settings.load("user://interface.cfg")==OK:
-		UIStyles.selected = clampi(int(settings.get_value("interface","style",0)),0,2)
+	UIStyles.selected = 0
 	y_sort_enabled = true
+	world_camera = Camera2D.new()
+	world_camera.position = Vector2(320,204)
+	add_child(world_camera)
 	background = Sprite2D.new()
 	background.texture = load("res://assets/store-modern.png")
+	dry_night_material = ShaderMaterial.new()
+	dry_night_material.shader = preload("res://scripts/dry_night.gdshader")
+	dry_night_material.set_shader_parameter("dry_exterior",preload("res://assets/art_direction/store-night-sidewalks-source.png"))
+	background.material = dry_night_material
 	background.centered = false
 	background.z_index = -10
 	add_child(background)
@@ -100,6 +109,10 @@ func _ready() -> void:
 		var rect: Rect2 = prop_rects[i]
 		prop.texture = load("res://assets/store-prop-%d.png" % i)
 		prop.centered = false
+		if i==3:
+			var cutout := ShaderMaterial.new()
+			cutout.shader = preload("res://scripts/counter_cutout.gdshader")
+			prop.material = cutout
 		var depth: float = 228 if i==3 else rect.end.y
 		prop.position = Vector2(rect.position.x,depth)
 		prop.offset.y = rect.position.y-depth
@@ -136,6 +149,7 @@ func _ready() -> void:
 		wall.collision_layer = 0
 		wall.add_child(shape)
 		add_child(wall)
+		wall.set_meta("base_rect",rect)
 		interior_bodies.append(wall)
 	crowd.setup(self)
 	player = CharacterBody2D.new()
@@ -171,12 +185,24 @@ func _ready() -> void:
 	wardrobe.setup(self)
 	controls = CanvasLayer.new()
 	add_child(controls)
+	hud_bands = Control.new()
+	hud_bands.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	controls.add_child(hud_bands)
+	for rect in [Rect2(0,0,640,34),Rect2(0,360,640,48)]:
+		var band := ColorRect.new()
+		band.position = rect.position
+		band.size = rect.size
+		band.color = Color(0.045,0.075,0.11,0.94)
+		band.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		hud_bands.add_child(band)
 	joystick = TouchStick.new()
 	joystick.changed.connect(func(value: Vector2): touch_vector = value)
 	controls.add_child(joystick)
 	joystick.visible = touch_controls
 	hud = Label.new()
 	hud.position = Vector2(16,9)
+	hud.size = Vector2(442,20)
+	hud.clip_text = true
 	hud.add_theme_font_size_override("font_size",12)
 	controls.add_child(hud)
 	atelier_sign = Label.new()
@@ -195,21 +221,23 @@ func _ready() -> void:
 	hour_banner.visible = false
 	controls.add_child(hour_banner)
 	message = Label.new()
-	message.position = Vector2(16,282)
-	message.size = Vector2(600,20)
+	message.position = Vector2(14,363)
+	message.size = Vector2(485,18)
 	message.clip_text = true
 	message.add_theme_font_size_override("font_size",12)
 	controls.add_child(message)
 	hint = Label.new()
-	hint.position = Vector2(16,303)
+	hint.position = Vector2(14,384)
+	hint.size = Vector2(485,20)
+	hint.clip_text = true
 	hint.add_theme_font_size_override("font_size",12)
 	hint.add_theme_color_override("font_color",Color("f1d29b"))
 	controls.add_child(hint)
-	button("Cerrar turno",Vector2(510,4),finish)
-	button("Pausa",Vector2(425,4),pause_shift)
-	button("Reponer · R",Vector2(370,328),events.restock)
-	button("Seguridad",Vector2(16,328),open_security_menu)
-	button("Mapa · M",Vector2(510,48),open_map)
+	button("Cerrar turno",Vector2(508,5),finish)
+	button("Pausa",Vector2(602,2),pause_shift)
+	button("Reponer · R",Vector2(510,379),events.restock)
+	button("Seguridad",Vector2(466,2),open_security_menu)
+	button("Mapa · M",Vector2(510,379),open_map)
 	menus.main_menu()
 
 func make_actor(asset: String, cell_size := Vector2i(32,48)) -> AnimatedSprite2D:
@@ -251,7 +279,7 @@ func button(text: String, pos: Vector2, action: Callable) -> void:
 	var b := Button.new()
 	b.text = text
 	b.position = pos
-	if touch_controls and b.position.y>316: b.position.y = 316
+	if touch_controls and b.position.y>360: b.position.y = 370
 	b.custom_minimum_size = Vector2(64,34 if touch_controls else 23)
 	b.pressed.connect(action)
 	style_control(b)
@@ -282,8 +310,7 @@ func show_panel(text: String, action: String, callback: Callable, continuation :
 	close_security_menu()
 	if is_instance_valid(panel): panel.queue_free()
 	joystick.reset()
-	panel = PanelContainer.new()
-	panel.position = Vector2(110,72)
+	panel = preload("res://scripts/centered_panel.gd").new()
 	panel.custom_minimum_size = Vector2(420,190)
 	style_control(panel)
 	var column := VBoxContainer.new()
@@ -384,7 +411,8 @@ func _physics_process(delta: float) -> void:
 	var before := player.position
 	player.velocity = player.velocity.move_toward(axis.limit_length()*(145 if Input.is_physical_key_pressed(KEY_SHIFT) else 90)*(0 if security.hiding else 1),720*delta)
 	player.move_and_slide()
-	player.position = player.position.clamp(Vector2(46,104),Vector2(594,272)) if location == "store" else (player.position.clamp(Vector2(30,195),Vector2(610,223)) if location == "city" else player.position.clamp(Vector2(40,158),Vector2(600,320)))
+	player.position = player.position.clamp(Vector2(46,104),Vector2(594,272)) if location == "store" else (player.position.clamp(District.walk_min(street),District.WALK_MAX) if location == "city" else player.position.clamp(District.room_point(location,Vector2(40,158)),District.room_point(location,Vector2(600,320))))
+	update_world_camera()
 	Motion.animate(actor,player.position-before,player.velocity.length())
 	update_hint()
 	if location == "city":
@@ -394,7 +422,7 @@ func _physics_process(delta: float) -> void:
 		hud.text = "%s · $%d" % [{"cafe":"CAFÉ DEL FARO","hardware":"FERRETERÍA DEL FARO","atelier":"ATELIER · HILO Y SOMBRA"}[location],money]
 		return
 	var hour := shift_hour()
-	hud.text = "NOCHE %d   %02d:00   $%d   Neveras %d · Estantes %d" % [night,hour,money,cold_stock(),shelf_stock()]
+	hud.text = "N%d  ·  %02d:00    $%d    Neveras %d / Estantes %d" % [night,hour,money,cold_stock(),shelf_stock()]
 	if hour_flash>0: hud.add_theme_color_override("font_color",Color("ffdf9e"))
 	else: hud.remove_theme_color_override("font_color")
 	if elapsed >= SHIFT_SECONDS: finish()
@@ -466,7 +494,6 @@ func _input(event: InputEvent) -> void:
 		if event.keycode==KEY_P: security.call_police()
 		if event.keycode==KEY_H: security.hide_player()
 		if event.keycode==KEY_M: open_map()
-		if event.keycode==KEY_F2: open_styles()
 	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_R: events.restock()
 	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_E: interact()
 	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_ESCAPE:
@@ -482,9 +509,7 @@ func pause_shift() -> void:
 	paused = true
 	joystick.reset()
 	show_panel("PAUSA\nTu partida está detenida.", "Reanudar", resume_shift)
-	panel.position.y = 48
 	add_panel_button("Comandos",menus.commands.bind(true))
-	add_panel_button("Diseño de botones e iconos · F2",open_styles)
 	add_panel_button("Activar sonido" if events.muted else "Silenciar música y efectos",toggle_audio)
 	add_audio_slider("Música",true)
 	add_audio_slider("Efectos",false)
@@ -546,33 +571,41 @@ func style_control(control: Control) -> void:
 func set_location(value: String) -> void:
 	if is_instance_valid(soundscape): soundscape.play("door-soft")
 	location = value
-	if is_instance_valid(atelier_sign): atelier_sign.visible = value=="city"
+	if is_instance_valid(atelier_sign): atelier_sign.visible = false
 	if is_instance_valid(map_button): map_button.visible = value=="city"
-	var interior := value in ["cafe","hardware","atelier"]
-	actor.scale = Vector2.ONE * (1.6 if interior else 1.0)
+	actor.scale = Vector2.ONE*(1.6 if value in ["cafe","hardware","atelier"] else 1.0)
 	actor.position.y = -20 * actor.scale.y
 	player.velocity = Vector2.ZERO
 	var store := value == "store"
+	background.material = dry_night_material if store else null
 	background.texture = load("res://assets/" + {"store":"store-modern","city":"city","cafe":"cafe","hardware":"hardware","atelier":"atelier"}[value] + ".png")
+	background.position = District.origin_for(value)
+	background.scale = Vector2.ONE*District.scale_for(value)
+	if value=="city": update_street_geometry()
+	for body in interior_bodies:
+		var rect: Rect2 = body.get_meta("base_rect")
+		body.position = District.room_point(value,rect.get_center())
+		body.get_child(0).shape.size = rect.size*District.scale_for(value)
+	update_world_camera()
 	for body in store_bodies: body.collision_layer = 1 if store else 0
 	for body in city_bodies: body.collision_layer = 1 if value=="city" else 0
 	for body in interior_bodies: body.collision_layer = 1 if value in ["cafe","hardware","atelier"] else 0
 	for prop in foreground_props: prop.visible = store
 	customer.visible = false
 	for p in crowd.people: p.node.visible = store
-	events.visible = store
+	events.visible = store or value=="city"
 	for b in shift_buttons: b.visible = store
 	if is_instance_valid(hour_banner): hour_banner.visible = store and hour_flash > 0.0
 
 func enter_city() -> void:
 	if is_instance_valid(panel): panel.queue_free()
 	set_location("city")
-	if street==1: background.texture = load("res://assets/modistas.png")
 	update_street_geometry()
 	active = true
 	paused = false
 	joystick.reset()
-	player.position = Vector2(162,210)
+	player.position = Vector2(District.DOORS.store,258)
+	update_world_camera()
 	message.text = "Ferretería: mejoras · Cafetería: descanso · Tienda: volver."
 	update_hint()
 
@@ -580,44 +613,42 @@ func update_hint() -> void:
 	restock_button.visible = location == "store" and (player.position.y<116 or events.shelf_near(player.position)>=0)
 	if location == "city":
 		var x := player.position.x
-		if street==1 and x>=78:
-			hint.text = "E · Atelier: cabello y ropa" if absf(x-326)<35 else "Calle Modistas · Atelier en el centro"
+		if (street==0 and x<60) or (street==1 and x>580):
+			hint.text = "E · " + ("Calle Modistas" if street==0 else "Avenida del Faro")
 			return
-		if x<78:
-			hint.text = "E · Cambiar de calle"
-			return
-		hint.text = "E · Volver a la tienda" if absf(x-162)<40 else ("E · Entrar a ferretería" if absf(x-367)<45 else ("E · Cafetería" if absf(x-530)<40 else "Pasea por el barrio"))
+		var nearby := nearby_shop()
+		hint.text = "E · " + {"store":"Volver a la tienda","hardware":"Entrar a ferretería","cafe":"Entrar a cafetería","atelier":"Entrar al atelier"}.get(nearby,"Pasear · M abre el mapa")
 	elif location in ["cafe","hardware","atelier"]:
-		hint.text = "E · Salir a la calle" if player.position.y>285 else ("E · Hablar en el mostrador" if player.position.y<175 else "Acércate al mostrador o explora el local")
+		var local_pos := District.local_point(location,player.position)
+		hint.text = "E · Salir a la calle" if local_pos.y>285 else ("E · Hablar en el mostrador" if local_pos.y<185 else "Acércate al mostrador o explora el local")
 	else:
 		if security.hiding:
 			hint.text = "H · Salir del mostrador"
 			return
 		hint.text = "E · Abrir / cerrar nevera · R reponer" if player.position.y<116 else ("E · Atender en caja" if player.position.distance_to(CASHIER)<28 else ("E · Examinar productos y precios" if events.shelf_near(player.position)>=0 else "Explora los pasillos"))
 
+func nearby_shop() -> String:
+	for place in (["atelier"] if street==1 else ["store","hardware","cafe"]):
+		if absf(player.position.x-District.DOORS[place])<36 and player.position.y<270: return place
+	return ""
+
 func city_interact() -> void:
 	var x := player.position.x
-	if x<78:
+	if (street==0 and x<60) or (street==1 and x>580):
 		street = 1-street
-		background.texture = load("res://assets/modistas.png" if street==1 else "res://assets/city.png")
 		update_street_geometry()
-		player.position.y = 210
-		player.position.x = 100
-		atelier_sign.text = "← VOLVER · ATELIER →" if street==1 else "← CALLE MODISTAS"
-		message.text = "Calle de las Modistas · Atelier en la puerta central" if street==1 else "Avenida del Faro"
-	elif street==1:
-		if absf(x-326)<35: enter_interior("atelier")
-		else: message.text = "Atelier: puerta central · Otros locales cerrados"
-	elif absf(x-367)<45:
-		enter_interior("hardware")
-	elif absf(x-162)<40:
+		player.position = Vector2(564 if street==1 else 76,276)
+		update_world_camera()
+		message.text = "Calle Modistas" if street==1 else "Avenida del Faro"
+		update_hint()
+		return
+	var place := nearby_shop()
+	if place=="store":
 		active = false
 		show_panel("VOLVER AL TRABAJO\nNoche %d · Stock %d · Saldo $%d\nLas mejoras compradas ya están instaladas." % [night,stock,money],"Comenzar siguiente turno",begin_shift)
 		add_panel_button("Seguir paseando",close_city_panel)
-	elif absf(x-530)<40:
-		enter_interior("cafe")
-	else:
-		message.text = "Atelier al extremo izquierdo · Tienda · Ferretería · Café."
+	elif not place.is_empty(): enter_interior(place)
+	else: message.text = "Acércate a una puerta. M · Mapa del barrio."
 
 func rest_at_cafe() -> void:
 	cafe_used = true
@@ -657,19 +688,21 @@ func close_city_panel() -> void:
 
 func enter_interior(kind: String) -> void:
 	set_location(kind)
-	player.position = Vector2(320,305)
+	player.position = District.room_point(kind,Vector2(320,305))
 	joystick.reset()
 	active = true
 	message.text = "Bienvenido. Acércate al mostrador para conversar."
 	update_hint()
 
 func interior_interact() -> void:
-	if player.position.y>285 and absf(player.position.x-320)<70:
-		var destination: int = {"hardware":367,"cafe":530,"atelier":326}[location]
+	var local_pos := District.local_point(location,player.position)
+	if local_pos.y>285 and absf(local_pos.x-320)<70:
+		var destination: float = District.DOORS[location]
 		enter_city()
-		player.position = Vector2(destination,210)
+		player.position = Vector2(destination,258)
+		update_world_camera()
 		update_hint()
-	elif player.position.y<175:
+	elif local_pos.y<185:
 		if location=="atelier": wardrobe.open()
 		elif location=="hardware": show_upgrades()
 		else:
@@ -704,11 +737,6 @@ func buy_cafe(index: int) -> void:
 func open_map() -> void:
 	if active and location=="city": exploration.city_map()
 
-func open_styles() -> void:
-	if transaction_open or (not active and not paused): return
-	paused = false
-	exploration.styles()
-
 func refresh_buttons(node: Node = null) -> void:
 	if node==null: node = controls
 	for child in node.get_children():
@@ -741,12 +769,18 @@ func available_items(person: Dictionary) -> Array[String]:
 	return result
 
 func update_street_geometry() -> void:
-	var top: float = 187
-	var bottom: float = 230
-	city_bodies[0].position.y = top/2
-	city_bodies[0].get_child(0).shape.size.y = top
-	city_bodies[1].position.y = (bottom+360)/2
-	city_bodies[1].get_child(0).shape.size.y = 360-bottom
+	background.texture = load(District.street_texture(street))
+	background.position = Vector2.ZERO
+	background.scale = District.STREET_SIZE / background.texture.get_size()
+	var rects := [Rect2(0,0,640,245 if street==1 else 237),Rect2(0,290,640,70),Rect2(0,0,16,360),Rect2(624,0,16,360)]
+	for i in range(city_bodies.size()):
+		city_bodies[i].position = rects[i].get_center()
+		city_bodies[i].get_child(0).shape.size = rects[i].size
+
+func update_world_camera() -> void:
+	if not is_instance_valid(world_camera): return
+	world_camera.position = Vector2(320,204)
+	world_camera.reset_smoothing()
 
 func open_security_menu() -> void:
 	if not active or location!="store": return
@@ -781,7 +815,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	if not active or not touch_controls: return
 	if event is InputEventScreenTouch and event.pressed:
 		if joystick.get_global_rect().has_point(event.position): return
-		if event.position.distance_to(player.position)<=55:
+		if (get_canvas_transform().affine_inverse()*event.position).distance_to(player.position)<=55:
 			interact()
 			get_viewport().set_input_as_handled()
 
@@ -789,6 +823,7 @@ func set_game_controls_visible(value: bool) -> void:
 	for child in controls.get_children():
 		if child is Button: child.visible = value
 	joystick.visible = value and touch_controls
+	hud_bands.visible = value
 	hud.visible = value
 	hint.visible = value
 	message.visible = value

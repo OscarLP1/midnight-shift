@@ -32,45 +32,25 @@ func shelf(index: int) -> void:
 func city_map() -> void:
 	if game.location != "city": return
 	var ui = game.commerce
-	var page: Control = ui.window("MAPA DEL BARRIO", "EL FARO  /  NEGOCIOS ABIERTOS Y FUTURAS ZONAS")
-	ui.line(page,Vector2(20,82),Vector2(566,175),Color("1c333b"))
-	ui.line(page,Vector2(24,158),Vector2(558,22),Color("547077"))
-	ui.line(page,Vector2(305,85),Vector2(18,168),Color("547077"))
-	ui.label(page,"AVENIDA DEL FARO",Vector2(346,160),10,Color("e2efdf"))
-	for i in range(3):
-		var x := 35+i*185
-		ui.button(page,["Tienda","Ferretería","Cafetería"][i],Rect2(x,103,160,37),map_place.bind(i),true)
-	ui.button(page,"Atelier · Calle Modistas",Rect2(35,200,175,44),map_place.bind(3),true)
-	var future := [["Parque",220],["Callejón",405]]
-	for place in future:
-		ui.button(page,place[0]+"\nPróximamente",Rect2(place[1],200,160,44),func(): pass,false,true)
-	var near := 3 if game.player.position.x<78 else (0 if game.player.position.x<260 else (1 if game.player.position.x<450 else 2))
-	ui.label(page,("● Tú · Calle Modistas" if game.street==1 else "● Tú · junto a " + ["la tienda","la ferretería","la cafetería","el atelier"][near]),Vector2(25,265),13,ui.ACCENT)
+	var page: Control = ui.window("MAPA DEL BARRIO", "DOS CALLES / NEGOCIOS DEL BARRIO")
+	ui.label(page,"OESTE · CALLE MODISTAS",Vector2(22,76),11,ui.MUTED)
+	ui.label(page,"ESTE · AVENIDA DEL FARO",Vector2(22,179),11,ui.MUTED)
+	var scale := 564.0/640.0
+	for data in [[20,85,"Viviendas",-1],[110,100,"Lavandería",-1],[230,190,"Atelier",3],[440,180,"Muebles",-1]]:
+		var place_button: Button = ui.button(page,data[2]+("\nPróximamente" if data[3]<0 else ""),Rect2(22+data[0]*scale,98,data[1]*scale,34),map_place.bind(data[3]),data[3]>=0,data[3]<0)
+		place_button.add_theme_font_size_override("font_size",10)
+		place_button.clip_text = true
+		place_button.size = Vector2(data[1]*scale,34)
+	for data in [[20,370,"Supermercado",0],[400,100,"Ferretería",1],[510,110,"Café",2]]:
+		ui.button(page,data[2],Rect2(22+data[0]*scale,201,data[1]*scale,34),map_place.bind(data[3]),true)
+	for y in [142,245]: ui.line(page,Vector2(22,y),Vector2(564,12),Color("354a59"))
+	ui.label(page,"Salida este → avenida     /     ← Salida oeste a Modistas",Vector2(22,159),11,ui.MUTED)
+	var dot := Vector2(22+game.player.position.x*scale,140 if game.street==1 else 243)
+	ui.label(page,"●",dot,12,ui.ACCENT)
+	ui.label(page,"Tú · "+("Calle Modistas" if game.street==1 else "Avenida del Faro"),Vector2(22,280),12,ui.ACCENT)
 	ui.button(page,"Cerrar mapa",Rect2(420,280,162,33),game.close_city_panel)
 
 func map_place(index: int) -> void:
+	if index<0: return
 	game.close_city_panel()
-	game.message.text = ["Tienda: puerta izquierda. Pulsa E para volver al turno.","Ferretería: puerta central. E para entrar.","Cafetería: puerta derecha. E para entrar.","Atelier: ve al extremo izquierdo y pulsa E para ir a Calle Modistas; busca la puerta central."][index]
-
-func styles() -> void:
-	var ui = game.commerce
-	var page: Control = ui.window("ELIGE EL ESTILO DE CONTROLES", "TRES PROPUESTAS  /  PUEDES CAMBIARLAS SIN REINICIAR")
-	for i in range(3):
-		var x := 20+i*194
-		ui.label(page,["A · NOCTURNO","B · PIXEL ÁMBAR","C · PAPEL"][i],Vector2(x,87),16)
-		for j in range(3):
-			var b: Button = ui.button(page,["Interactuar","Mapa","Productos"][j],Rect2(x,119+j*42,176,34),func(): pass,j==0)
-			game.UIStyles.apply(b,j==0,i)
-			b.icon = game.UIStyles.icon(["hand","map","bag"][j],i)
-			b.expand_icon = true
-			b.add_theme_constant_override("icon_max_width",18)
-		ui.button(page,"Usar " + ["A","B","C"][i],Rect2(x,256,176,34),choose_style.bind(i),game.UIStyles.selected==i)
-	ui.button(page,"Volver al juego",Rect2(420,294,176,27),game.close_city_panel)
-
-func choose_style(index: int) -> void:
-	game.UIStyles.selected = index
-	var settings := ConfigFile.new()
-	settings.set_value("interface","style",index)
-	settings.save("user://interface.cfg")
-	game.refresh_buttons()
-	styles()
+	game.message.text = ["Supermercado: edificio más ancho de Avenida del Faro.","Ferretería: entre el supermercado y el café.","Cafetería: extremo este de Avenida del Faro.","Atelier: Calle Modistas, al oeste de Avenida del Faro."][index]

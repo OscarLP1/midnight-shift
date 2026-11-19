@@ -36,7 +36,7 @@ func run() -> void:
 	assert(game.money==expected)
 	await process_frame
 	game.enter_interior("cafe")
-	game.player.position = Vector2(320,165)
+	game.player.position = game.District.room_point(game.location,Vector2(320,170))
 	game.interact()
 	await process_frame
 	assert(game.cafe_menu_open and game.panel.size.y<=328)

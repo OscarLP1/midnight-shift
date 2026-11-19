@@ -75,13 +75,13 @@ func run() -> void:
 	game.events._process(0.1)
 	if game.events.music[0].playing: assert(game.events.music[0].stream_paused)
 	game.enter_city()
-	game.player.position = Vector2(40,210)
+	game.player.position = Vector2(40,258)
 	game.interact()
 	assert(game.street==1 and game.location=="city")
-	game.player.position = Vector2(367,210)
+	game.player.position = Vector2(game.District.DOORS.atelier,258)
 	game.interact()
 	assert(game.location=="atelier")
-	game.player.position = Vector2(320,165)
+	game.player.position = game.District.room_point(game.location,Vector2(320,170))
 	game.interact()
 	await process_frame
 	assert(not game.active and game.panel.size.x<=608 and game.panel.size.y<=328)
@@ -98,9 +98,9 @@ func run() -> void:
 	game.wardrobe.saved = [0,0,0,0]
 	game.wardrobe.setup(game)
 	assert(game.wardrobe.saved==[1,2,1,3])
-	game.player.position = Vector2(320,305)
+	game.player.position = game.District.room_point(game.location,Vector2(320,305))
 	game.interact()
-	assert(game.location=="city" and game.player.position.x==367)
+	assert(game.location=="city" and game.player.position.x==game.District.DOORS.atelier)
 	game.open_map()
 	await process_frame
 	assert(game.panel.size.y<=328)

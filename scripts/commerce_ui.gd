@@ -27,10 +27,9 @@ func window(title: String, subtitle: String, warm := false) -> Control:
 	game.joystick.reset()
 	var shade := ColorRect.new()
 	shade.color = Color(0.02,0.04,0.07,0.82)
-	shade.size = Vector2(640,360)
+	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	game.controls.add_child(shade)
-	game.panel = PanelContainer.new()
-	game.panel.position = Vector2(16,16)
+	game.panel = preload("res://scripts/centered_panel.gd").new()
 	game.panel.size = Vector2(608,328)
 	game.panel.add_theme_stylebox_override("panel",box(PAPER if warm else Color("12242b")))
 	game.panel.tree_exited.connect(func():

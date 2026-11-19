@@ -36,11 +36,11 @@ func commands(from_pause := false) -> void:
 	var page: Control = ui.window("COMANDOS","CONTROLES Y ACCIONES  /  PUEDES CONSULTAR ESTA GUÍA DESDE PAUSA")
 	var groups := [
 		[["WASD","Moverse · también flechas"],["Shift","Correr"],["E","Interactuar y atender"],["R","Reponer la zona cercana"],["Esc","Pausar / cerrar Seguridad"]],
-		[["B","Abrir / cerrar la entrada"],["P","Llamar a la policía"],["H","Esconderse / salir"],["M","Mapa del barrio"],["F2","Estilo de controles"]]
+		[["B","Abrir / cerrar la entrada"],["P","Llamar a la policía"],["H","Esconderse / salir"],["M","Mapa del barrio"]]
 	]
 	for column in range(2):
 		var x := 20+column*292
-		for row in range(5):
+		for row in range(groups[column].size()):
 			var y := 86+row*34
 			ui.line(page,Vector2(x,y),Vector2(78,27),Color("28434a"))
 			ui.label(page,groups[column][row][0],Vector2(x+6,y+5),11,ui.ACCENT)

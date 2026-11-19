@@ -2,6 +2,8 @@ extends Node2D
 
 var game: Node2D
 var weather := 0
+var rain_amount := 0.0
+var snow_amount := 0.0
 var door := -1
 var open_doors := [false,false,false,false,false]
 var open_time := [0.0,0.0,0.0,0.0,0.0]
@@ -61,6 +63,11 @@ func setup(owner_game: Node2D) -> void:
 		if DisplayServer.get_name()!="headless": layer.play()
 
 func _process(delta: float) -> void:
+	if game.active:
+		phase += delta
+		rain_amount = move_toward(rain_amount,1.0 if weather==1 else 0.0,delta*0.45)
+		snow_amount = move_toward(snow_amount,1.0 if weather==2 else 0.0,delta*0.3)
+	queue_redraw()
 	if is_instance_valid(voice): voice.stream_paused = not game.active or muted or game.location!="store"
 	for i in range(creatures.size()):
 		creatures[i].visible = apparition>0 and monster_index==i and game.location=="store"
@@ -110,7 +117,6 @@ func reset_shift() -> void:
 	for creature in creatures: creature.visible = false
 
 func tick(delta: float) -> void:
-	phase += delta
 	for i in range(5):
 		if open_doors[i]:
 			open_time[i] += delta
@@ -221,19 +227,8 @@ func outside(p: Vector2) -> bool:
 
 func _draw() -> void:
 	if not is_instance_valid(game): return
-	var regions: Array[Rect2] = [Rect2(0,309,640,51),Rect2(0,30,22,279),Rect2(618,30,22,279),Rect2(0,0,640,30)]
-	for region in regions:
-		var count := 70 if region.size.x>50 else 32
-		for i in range(count):
-			var x := region.position.x+fposmod(i*83.7+phase*(6 if weather==2 else -14),maxf(1,region.size.x-5))
-			var y := region.position.y+fposmod(i*19.3+phase*(18 if weather==2 else 130),maxf(1,region.size.y-8))
-			if weather==1: draw_line(Vector2(x+3,y),Vector2(x,y+7),Color(0.53,0.72,0.89,0.65))
-			elif weather==2: draw_rect(Rect2(x,y,2,2),Color("e1edf0"))
-	if weather==2:
-		draw_line(Vector2(21,35),Vector2(21,306),Color("becfd9"),2)
-		draw_line(Vector2(617,35),Vector2(617,306),Color("becfd9"),2)
-		draw_line(Vector2(25,306),Vector2(273,306),Color("d8e5ed"),2)
-		draw_line(Vector2(366,306),Vector2(616,306),Color("d8e5ed"),2)
+	draw_weather()
+	if game.location!="store": return
 	if apparition>0:
 		var opacity := minf(clampf((APPEARANCE_SECONDS-apparition)/1.2,0,1),clampf(apparition/2.0,0,1))
 		draw_rect(Rect2(32,92,576,188),Color(0.025,0.04,0.09,(0.65 if sin(phase*19)>0.7 else 0.18)*opacity))
@@ -254,3 +249,42 @@ func play_vocal(cue: String) -> void:
 	vocal_count += 1
 	voice.stream = load("res://assets/audio/"+cue+".wav")
 	if not muted and DisplayServer.get_name()!="headless": voice.play()
+
+func weather_regions() -> Array[Rect2]:
+	if game.location=="city": return [Rect2(0,0,640,360)]
+	if game.location=="store": return [Rect2(0,309,640,51),Rect2(0,30,21,279),Rect2(619,30,21,279),Rect2(0,0,640,30)]
+	return []
+
+func draw_weather() -> void:
+	var regions := weather_regions()
+	for region in regions:
+		# Surface response is independent of the dry background, with gradual transitions.
+		if region.position.y>=309 or game.location=="city":
+			var ground := Rect2(0,292,640,68) if game.location=="city" else region
+			draw_rect(ground,Color(0.08,0.15,0.23,0.2*rain_amount))
+			for i in range(22):
+				var pos := Vector2(fposmod(i*97.7,632.0)+4,ground.position.y+fposmod(i*17.9,ground.size.y-4))
+				var pulse := fposmod(phase*1.6+i*0.37,1.0)
+				draw_set_transform(pos,0,Vector2(1,0.28))
+				draw_arc(Vector2.ZERO,1+pulse*5,0,TAU,12,Color(0.57,0.72,0.79,(1-pulse)*0.42*rain_amount),1)
+				draw_set_transform(Vector2.ZERO)
+				# Small irregular snow deposits; leave the walking lane readable.
+				draw_rect(Rect2(pos.x,ground.end.y-3-fposmod(i*7.0,9.0),8+i%7,2),Color(0.72,0.82,0.91,0.65*snow_amount))
+		for layer in range(3):
+			var count := int(region.get_area()/950.0)+8
+			for i in range(count):
+				var seed_value := float(i*83+layer*191)
+				var speed := 85.0+layer*45.0
+				var x := region.position.x+fposmod(seed_value-phase*(13+layer*7),region.size.x)
+				var y := region.position.y+fposmod(i*37.3+layer*31+phase*speed,region.size.y)
+				if rain_amount>0:
+					var end := Vector2(maxf(region.position.x,x-1.5-layer),minf(region.end.y,y+3+layer*2))
+					draw_line(Vector2(x,y),end,Color(0.59,0.74,0.87,(0.18+layer*0.12)*rain_amount),1)
+				if snow_amount>0:
+					var sway := sin(phase*(0.65+layer*0.13)+i)* (3+layer*2)
+					x = region.position.x+fposmod(seed_value+phase*(3+layer)+sway,region.size.x-2)
+					y = region.position.y+fposmod(i*37.3+phase*(9+layer*7),region.size.y-2)
+					draw_rect(Rect2(x,y,1+int(layer==2),1+int(layer==2)),Color(0.85,0.92,1,(0.35+layer*0.23)*snow_amount))
+	if game.location=="store" and snow_amount>0:
+		for rect in [Rect2(24,306,250,2),Rect2(366,306,250,2),Rect2(20,35,2,271),Rect2(618,35,2,271)]:
+			draw_rect(rect,Color(0.78,0.87,0.94,snow_amount*0.85))
