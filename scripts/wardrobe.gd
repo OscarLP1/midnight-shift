@@ -21,15 +21,18 @@ func setup(owner_game) -> void:
 func apply(sprite: AnimatedSprite2D, look: Array) -> void:
 	var source: AnimatedSprite2D = game.make_actor(ASSETS[look[1]])
 	sprite.sprite_frames = source.sprite_frames
+	game.Motion.copy_profile(sprite,source)
 	source.free()
 	var mat := ShaderMaterial.new()
 	mat.shader = preload("res://scripts/appearance.gdshader")
+	mat.set_shader_parameter("same_head",look[0]==look[1])
+	mat.set_shader_parameter("columns",float(sprite.get_meta("walk_columns",4)))
+	sprite.set_meta("uses_head_atlas",true)
 	mat.set_shader_parameter("head",load("res://assets/"+ASSETS[look[0]]+".png"))
 	mat.set_shader_parameter("jacket",COLORS[look[2]])
 	mat.set_shader_parameter("hair",HAIR_COLORS[look[3]])
 	sprite.material = mat
-	sprite.play(str(direction))
-	sprite.pause()
+	game.Motion.face(sprite,direction)
 
 func open() -> void:
 	draft = saved.duplicate()

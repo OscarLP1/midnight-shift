@@ -86,8 +86,7 @@ func spawn() -> void:
 		thieves_spawned += 1
 		var outfit: AnimatedSprite2D = game.make_actor("burglar")
 		sprite.sprite_frames = outfit.sprite_frames
-		sprite.set_meta("rest_frame",1)
-		sprite.set_meta("max_cadence",1.8)
+		Motion.copy_profile(sprite,outfit)
 		outfit.free()
 		sprite.material = null
 	people.append(p)
@@ -171,7 +170,7 @@ func tick(delta: float) -> void:
 				continue
 			var before: Vector2 = p.node.position
 			p.node.position = p.node.position.move_toward(target,p.speed*delta)
-			Motion.animate(p.sprite,p.node.position-before,p.speed)
+			Motion.animate(p.sprite,p.node.position-before,p.speed,"run" if p.state in ["panicking","fleeing"] else "")
 			if p.node.position.distance_to(target)<0.5:
 				p.path.remove_at(0)
 				if p.path.is_empty() and p.state=="queue": Motion.face(p.sprite,0)

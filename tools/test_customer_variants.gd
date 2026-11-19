@@ -13,9 +13,9 @@ func run() -> void:
 		assert(not seen.has(person.look))
 		seen[person.look] = true
 		for d in range(4):
-			assert(person.sprite.sprite_frames.get_frame_count(str(d))==4)
+			assert(person.sprite.sprite_frames.get_frame_count(str(d))==int(person.sprite.get_meta("walk_columns",4)))
 			game.Motion.face(person.sprite,d)
 			assert(person.sprite.animation==str(d))
 	assert(seen.size()==7)
-	print("PASS: siete apariencias sin repetición, cuatro direcciones y 16 frames por cliente")
+	print("PASS: siete apariencias sin repetición, cuatro direcciones y ciclos de 4/8 cuadros según la base")
 	quit()

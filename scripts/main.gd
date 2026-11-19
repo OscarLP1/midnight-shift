@@ -215,23 +215,37 @@ func _ready() -> void:
 func make_actor(asset: String, cell_size := Vector2i(32,48)) -> AnimatedSprite2D:
 	var sprite := AnimatedSprite2D.new()
 	var frames := SpriteFrames.new()
-	var texture: Texture2D = load("res://assets/" + asset + ".png")
+	var profile: Dictionary = Motion.PROFILES.get(asset,{})
+	var walk_asset: String = profile.get("walk",asset)
+	var texture: Texture2D = load("res://assets/"+walk_asset+".png")
+	var columns := int(texture.get_width()/cell_size.x)
+	add_actor_frames(frames,texture,cell_size,columns,"")
+	sprite.set_meta("asset",asset)
+	sprite.set_meta("walk_columns",columns)
+	sprite.set_meta("walk_stride",32.0 if asset=="stray-dog" else (48.0 if asset.begins_with("monster-walk-") else profile.get("walk_stride",40.0)))
+	sprite.set_meta("rest_frame",1 if columns==8 else (1 if asset in ["burglar","police-officer","customer-woman","customer-senior","customer-courier","stray-dog"] or asset.begins_with("monster-walk-") else 0))
+	if profile.has("run"):
+		var run_texture: Texture2D = load("res://assets/"+profile.run+".png")
+		var run_columns := int(run_texture.get_width()/cell_size.x)
+		add_actor_frames(frames,run_texture,cell_size,run_columns,"run_")
+		sprite.set_meta("run_columns",run_columns)
+		sprite.set_meta("run_threshold",profile.run_threshold)
+		sprite.set_meta("run_stride",profile.run_stride)
+	sprite.sprite_frames = frames
+	sprite.position.y = -20
+	Motion.face(sprite,0)
+	return sprite
+
+func add_actor_frames(frames: SpriteFrames, texture: Texture2D, cell_size: Vector2i, columns: int, prefix: String) -> void:
 	for direction in range(4):
-		var key := str(direction)
+		var key := prefix+str(direction)
 		frames.add_animation(key)
-		frames.set_animation_speed(key, 8)
-		for frame in range(4):
+		frames.set_animation_speed(key,8)
+		for frame in range(columns):
 			var region := AtlasTexture.new()
 			region.atlas = texture
 			region.region = Rect2(frame*cell_size.x,direction*cell_size.y,cell_size.x,cell_size.y)
 			frames.add_frame(key,region)
-	sprite.sprite_frames = frames
-	if asset in ["burglar","police-officer","customer-woman","customer-senior","customer-courier","stray-dog"] or asset.begins_with("monster-walk-"):
-		sprite.set_meta("rest_frame",1)
-		sprite.set_meta("max_cadence",1.8)
-	sprite.position.y = -20
-	sprite.play("0")
-	return sprite
 
 func button(text: String, pos: Vector2, action: Callable) -> void:
 	var b := Button.new()

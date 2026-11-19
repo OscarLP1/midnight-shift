@@ -45,3 +45,5 @@ Pulido: el cliente decide efectivo/tarjeta; la caja solo muestra y procesa su el
 Seguridad se abre con el icono de placa y funciona sin pausar; Esc lo cierra. La sirena acompaña la llegada de la patrulla. Al cruzar con detenidos, el agente abre las puertas, sale y las cierra antes de retirarse. El icono de pausa sí detiene la partida.
 
 Menú principal: Continuar, Nueva partida y Comandos. La guía también está en Pausa. Ya no hay botón Interactuar en pantalla: usa E; en táctil toca cerca del personaje, fuera del joystick. Esc vuelve desde la guía al menú de origen.
+
+Locomoción2D: el uniforme del protagonista usa8cuadros por dirección para caminar y correr; policía y ladrón tienen carrera8cuadros además de su marcha. La fase de todos los actores sigue su desplazamiento real y conserva ritmo al girar. Permanecen cuatro orientaciones dibujadas; diagonales y animaciones de acciones adicionales están pendientes. Preparación: tools/prepare_gait8.py; prueba: tools/test_gait8.gd.

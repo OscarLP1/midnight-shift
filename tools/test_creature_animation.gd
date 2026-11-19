@@ -10,9 +10,9 @@ func run() -> void:
  for asset in ["employee-modern","burglar","police-officer","customer-woman","customer-senior","customer-courier","stray-dog"]:
   var actor = game.make_actor(asset)
   for pair in [[Vector2.DOWN,"0"],[Vector2.UP,"1"],[Vector2.LEFT,"2"],[Vector2.RIGHT,"3"]]:
-   game.Motion.animate(actor,pair[0],110)
+   game.Motion.animate(actor,pair[0],70)
    assert(actor.animation==pair[1] and actor.is_playing())
-   assert(actor.sprite_frames.get_frame_count(pair[1])==4)
+   assert(actor.sprite_frames.get_frame_count(pair[1])==int(actor.get_meta("walk_columns",4)))
   game.Motion.animate(actor,Vector2.ZERO)
   assert(not actor.is_playing())
   actor.free()

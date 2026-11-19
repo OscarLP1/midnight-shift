@@ -17,7 +17,7 @@ func run() -> void:
 	assert(game.crowd.people[0].thief)
 	for pair in [[Vector2.DOWN,"0"],[Vector2.UP,"1"],[Vector2.LEFT,"2"],[Vector2.RIGHT,"3"]]:
 		game.Motion.animate(sprite,pair[0],100)
-		assert(sprite.animation==pair[1] and sprite.is_playing())
+		assert(game.Motion.facing(sprite)==int(pair[1]) and sprite.is_playing())
 	game.Motion.animate(sprite,Vector2.ZERO)
 	assert(sprite.frame==1 and not sprite.is_playing())
 	for direction in range(4): assert(sprite.sprite_frames.get_frame_count(str(direction))==4)
