@@ -66,7 +66,7 @@ func spawn() -> void:
 	body.add_child(sprite)
 	var bubble := Label.new()
 	bubble.position = Vector2(-25,-57)
-	bubble.add_theme_font_size_override("font_size",10)
+	game.UIStyles.apply_label(bubble,game.UIStyles.FONT_CAPTION)
 	bubble.add_theme_color_override("font_color",Color.WHITE)
 	bubble.add_theme_color_override("font_outline_color",Color.BLACK)
 	bubble.add_theme_constant_override("outline_size",4)

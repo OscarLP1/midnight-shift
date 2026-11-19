@@ -203,12 +203,12 @@ func _ready() -> void:
 	hud.position = Vector2(16,9)
 	hud.size = Vector2(442,20)
 	hud.clip_text = true
-	hud.add_theme_font_size_override("font_size",12)
+	UIStyles.apply_label(hud,UIStyles.FONT_BODY)
 	controls.add_child(hud)
 	atelier_sign = Label.new()
 	atelier_sign.text = "← CALLE MODISTAS"
 	atelier_sign.position = Vector2(14,107)
-	atelier_sign.add_theme_font_size_override("font_size",10)
+	UIStyles.apply_label(atelier_sign,UIStyles.FONT_CAPTION)
 	atelier_sign.add_theme_color_override("font_color",Color("eac6be"))
 	atelier_sign.visible = false
 	add_child(atelier_sign)
@@ -216,7 +216,7 @@ func _ready() -> void:
 	hour_banner.position = Vector2(200,86)
 	hour_banner.size = Vector2(240,36)
 	hour_banner.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	hour_banner.add_theme_font_size_override("font_size",22)
+	UIStyles.apply_label(hour_banner,UIStyles.FONT_TITLE)
 	hour_banner.add_theme_color_override("font_color",Color("ffdf9e"))
 	hour_banner.visible = false
 	controls.add_child(hour_banner)
@@ -224,13 +224,13 @@ func _ready() -> void:
 	message.position = Vector2(14,363)
 	message.size = Vector2(485,18)
 	message.clip_text = true
-	message.add_theme_font_size_override("font_size",12)
+	UIStyles.apply_label(message,UIStyles.FONT_BODY)
 	controls.add_child(message)
 	hint = Label.new()
 	hint.position = Vector2(14,384)
 	hint.size = Vector2(485,20)
 	hint.clip_text = true
-	hint.add_theme_font_size_override("font_size",12)
+	UIStyles.apply_label(hint,UIStyles.FONT_BODY)
 	hint.add_theme_color_override("font_color",Color("f1d29b"))
 	controls.add_child(hint)
 	button("Cerrar turno",Vector2(508,5),finish)
@@ -316,7 +316,7 @@ func show_panel(text: String, action: String, callback: Callable, continuation :
 	var column := VBoxContainer.new()
 	panel.add_child(column)
 	var label := Label.new()
-	label.add_theme_font_size_override("font_size",14)
+	UIStyles.apply_label(label,UIStyles.FONT_BODY)
 	label.text = text
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	column.add_child(label)
@@ -519,6 +519,7 @@ func add_audio_slider(title: String, music: bool) -> void:
 	var label := Label.new()
 	label.text = title+" · %d %%" % int((events.music_volume if music else events.effects_volume)*100)
 	label.custom_minimum_size.x = 150
+	UIStyles.apply_label(label,UIStyles.FONT_BODY
 	row.add_child(label)
 	var slider := HSlider.new()
 	slider.max_value = 200
@@ -562,7 +563,6 @@ func style_control(control: Control) -> void:
 		hover.bg_color = Color("315058")
 		control.add_theme_stylebox_override("hover",hover)
 		control.add_theme_stylebox_override("pressed",hover)
-		control.add_theme_font_size_override("font_size",12)
 		control.add_theme_color_override("font_color",Color("f2ddbc"))
 		UIStyles.apply(control)
 	else:

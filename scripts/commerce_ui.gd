@@ -32,6 +32,10 @@ func window(title: String, subtitle: String, warm := false) -> Control:
 	game.panel = preload("res://scripts/centered_panel.gd").new()
 	game.panel.size = Vector2(608,328)
 	game.panel.add_theme_stylebox_override("panel",box(PAPER if warm else Color("12242b")))
+	game.panel.add_theme_constant_override("margin_left",game.UIStyles.SPACE_MD)
+	game.panel.add_theme_constant_override("margin_right",game.UIStyles.SPACE_MD)
+	game.panel.add_theme_constant_override("margin_top",game.UIStyles.SPACE_SM)
+	game.panel.add_theme_constant_override("margin_bottom",game.UIStyles.SPACE_SM)
 	game.panel.tree_exited.connect(func():
 		if is_instance_valid(shade): shade.queue_free())
 	var page := Control.new()
@@ -47,8 +51,8 @@ func label(parent: Node, text: String, pos: Vector2, font_size := 12, color := I
 	var l := Label.new()
 	l.text = text
 	l.position = pos
-	l.add_theme_font_size_override("font_size",maxi(10,font_size))
-	l.add_theme_font_override("font",game.UIStyles.TITLE if font_size>=18 else game.UIStyles.BODY)
+	l.size.y = 22
+	game.UIStyles.apply_label(l,font_size)
 	l.add_theme_color_override("font_color",color)
 	if width>0:
 		l.size.x = width
@@ -70,7 +74,6 @@ func button(parent: Node, text: String, rect: Rect2, callback: Callable, primary
 	b.position = rect.position
 	b.size = rect.size
 	b.disabled = disabled
-	b.add_theme_font_size_override("font_size",12)
 	b.add_theme_stylebox_override("normal",box(Color("84cbb4") if primary else Color("243b41")))
 	b.add_theme_stylebox_override("hover",box(Color("a2e3ce") if primary else Color("36545a")))
 	b.add_theme_stylebox_override("pressed",box(Color("75b9a5")))

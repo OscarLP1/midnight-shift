@@ -38,7 +38,6 @@ func city_map() -> void:
 	var scale := 564.0/640.0
 	for data in [[20,85,"Viviendas",-1],[110,100,"Lavandería",-1],[230,190,"Atelier",3],[440,180,"Muebles",-1]]:
 		var place_button: Button = ui.button(page,data[2]+("\nPróximamente" if data[3]<0 else ""),Rect2(22+data[0]*scale,98,data[1]*scale,34),map_place.bind(data[3]),data[3]>=0,data[3]<0)
-		place_button.add_theme_font_size_override("font_size",10)
 		place_button.clip_text = true
 		place_button.size = Vector2(data[1]*scale,34)
 	for data in [[20,370,"Supermercado",0],[400,100,"Ferretería",1],[510,110,"Café",2]]:

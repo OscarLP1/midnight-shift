@@ -25,7 +25,7 @@ func setup(owner_game) -> void:
 	close.pressed.connect(game.close_security_menu)
 	header.add_child(close)
 	status = Label.new()
-	status.add_theme_font_size_override("font_size",11)
+	game.UIStyles.apply_label(status,game.UIStyles.FONT_CAPTION)
 	column.add_child(status)
 	door = action(column,"",game.security.toggle_door)
 	call = action(column,"",game.security.call_police)

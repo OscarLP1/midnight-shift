@@ -66,19 +66,17 @@ func show_page() -> void:
 	ui.button(page,"Girar ↻",Rect2(45,239,140,30),rotate_preview)
 	ui.label(page,"GÉNERO",Vector2(233,80),10,ui.MUTED)
 	for i in range(2):
-		var gender_button: Button = ui.button(page,GENDERS[i],Rect2(233+i*171,97,165,32),set_gender.bind(i),draft[0]==i)
-		gender_button.add_theme_font_size_override("font_size",11)
+		var gender_button: Button = ui.button(page,GENDERS[i],Rect2(233+i*180,97,172,32),set_gender.bind(i),draft[0]==i)
 	ui.label(page,"SEIS CONJUNTOS · PRENDA Y PEINADO",Vector2(233,143),10,ui.MUTED)
 	for i in range(6):
 		var col := i%3
 		var row := i/3
 		var y := 161+row*48
-		var outfit_button: Button = ui.button(page,OUTFIT_NAMES[i]+"\n"+HAIR_NAMES[i],Rect2(233+col*114,y,108,42),select_outfit.bind(i),draft[1]==i)
-		outfit_button.add_theme_font_size_override("font_size",9)
+		var outfit_button: Button = ui.button(page,OUTFIT_NAMES[i]+"\n"+HAIR_NAMES[i],Rect2(233+col*120,y,112,44),select_outfit.bind(i),draft[1]==i)
 		outfit_button.clip_text = true
-	ui.label(page,"La vista previa conserva tu personaje y sus proporciones.",Vector2(22,288),10,ui.MUTED)
-	ui.button(page,"Cancelar",Rect2(307,282,110,32),game.close_city_panel)
-	ui.button(page,"Guardar aspecto",Rect2(426,282,154,32),confirm,true)
+	ui.label(page,"Tu personaje mantiene cuerpo y animaciones.",Vector2(22,288),10,ui.MUTED,278)
+	ui.button(page,"Cancelar",Rect2(314,282,112,32),game.close_city_panel)
+	ui.button(page,"Guardar aspecto",Rect2(434,282,152,32),confirm,true)
 
 func select_outfit(index: int) -> void:
 	draft[1] = clampi(index,0,5)

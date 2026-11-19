@@ -13,6 +13,8 @@ Aplican a todo este repositorio. Mantener este archivo actualizado con las decis
 - La noche base debe ser seca. Lluvia y nieve son efectos animados con audio, no marcas permanentes en el fondo; sólo caen fuera de los locales.
 
 ## Interfaz y visibilidad
+- Usar una escala tipográfica compartida: rótulo 10 px, texto 12 px, botón 13 px, sección 16 px y título 22 px. Atkinson para lectura; Pixelify Sans sólo para títulos de pantalla.
+- Alinear menús con márgenes de 8/16/24 px, columnas y filas con separaciones constantes; ajustar texto a los botones, sin cortes ni solapamientos.
 - Centrar todos los menús según su tamaño y el viewport, incluso si se redimensiona.
 - Una sola interfaz coherente. El usuario aprobó el estilo Nocturno con controles compactos e iconos.
 - No volver a añadir un selector de tres diseños ni un botón permanente de interactuar. Mantener Comandos en el menú.

@@ -4,7 +4,27 @@ static var selected := 0
 const BODY = preload("res://assets/fonts/Atkinson-Regular.ttf")
 const BOLD = preload("res://assets/fonts/Atkinson-Bold.ttf")
 const TITLE = preload("res://assets/fonts/PixelifySans.ttf")
-const NAMES = ["Nocturno", "Pixel ámbar", "Papel"]
+const NAMES = ["Nocturno"]
+const FONT_CAPTION := 10
+const FONT_BODY := 12
+const FONT_CONTROL := 13
+const FONT_SECTION := 16
+const FONT_TITLE := 22
+const SPACE_XS := 4
+const SPACE_SM := 8
+const SPACE_MD := 16
+const SPACE_LG := 24
+
+static func font_for_size(value: int) -> int:
+	if value >= 20: return FONT_TITLE
+	if value >= 15: return FONT_SECTION
+	if value >= 12: return FONT_BODY
+	return FONT_CAPTION
+
+static func apply_label(label: Label, requested_size := FONT_BODY) -> void:
+	var size := font_for_size(requested_size)
+	label.add_theme_font_override("font",TITLE if size==FONT_TITLE else (BOLD if size>=FONT_SECTION else BODY))
+	label.add_theme_font_size_override("font_size",size)
 
 static func apply(button: Button, primary := false, preset := -1) -> void:
 	var index := 0
@@ -27,12 +47,12 @@ static func apply(button: Button, primary := false, preset := -1) -> void:
 		if state=="disabled": box.bg_color = fills[index].darkened(0.15)
 		if state=="focus": box.bg_color = Color.TRANSPARENT
 		button.add_theme_stylebox_override(state,box)
-	button.add_theme_font_override("font",TITLE if index==1 else BOLD)
+	button.add_theme_font_override("font",BOLD)
 	button.add_theme_color_override("font_color",fills[index] if primary else texts[index])
 	button.add_theme_color_override("font_hover_color",fills[index] if primary else texts[index])
 	button.add_theme_color_override("font_pressed_color",texts[index])
 	button.add_theme_color_override("font_disabled_color",texts[index].darkened(0.35))
-	button.add_theme_font_size_override("font_size",11 if button.get_meta("compact_hud",false) else 13)
+	button.add_theme_font_size_override("font_size",FONT_BODY if button.get_meta("compact_hud",false) else FONT_CONTROL)
 
 static func icon(kind: String, preset := -1) -> Texture2D:
 	var index := 0
